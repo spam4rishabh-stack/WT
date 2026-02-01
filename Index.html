@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Progressive Overload Tracker</title>
+    <style>
+        :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #007aff; --success: #34c759; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; padding-bottom: 80px; }
+        
+        /* Layout */
+        .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+        h1 { font-size: 24px; margin-bottom: 20px; font-weight: 700; }
+        
+        /* Cards */
+        .card { background-color: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .exercise-name { font-size: 18px; font-weight: 600; color: #fff; }
+        .target-text { color: var(--accent); font-weight: 600; font-size: 15px; margin-top: 4px; }
+        
+        /* Inputs & Buttons */
+        input, select, textarea { background: #333; border: none; color: white; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 16px; margin-bottom: 8px; }
+        button { border: none; padding: 12px 20px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 8px; }
+        .btn-primary { background-color: var(--accent); color: white; }
+        .btn-secondary { background-color: #333; color: white; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-danger { background-color: #ff3b30; color: white; }
+        .fab { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: white; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,122,255,0.4); border: none; }
+
+        /* Set Logging Row */
+        .set-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .set-label { font-size: 12px; color: #888; text-align: center; margin-bottom: 4px; }
+        .del-btn { background: #ff3b30; color: white; width: 30px; height: 38px; display: flex; align-items: center; justify-content: center; padding: 0; }
+
+        /* Utilities */
+        .hidden { display: none; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .previous-notes { background: #2c2c2e; padding: 10px; border-radius: 8px; font-size: 14px; color: #ddd; margin-bottom: 15px; border-left: 4px solid var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+    <div id="home-view">
+        <h1>My Training</h1>
+        <div id="exercise-list"></div>
+    </div>
+
+    <div id="edit-modal" class="modal hidden">
+        <h2>Setup Exercise</h2>
+        <input type="text" id="edit-name" placeholder="Exercise Name (e.g. Bench Press)">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div>
+                <label class="set-label">Min Reps</label>
+                <input type="number" id="edit-min-reps" placeholder="8">
+            </div>
+            <div>
+                <label class="set-label">Max Reps</label>
+                <input type="number" id="edit-max-reps" placeholder="10">
+            </div>
+        </div>
+        <div>
+            <label class="set-label">Weight Increment (kg/lbs)</label>
+            <input type="number" id="edit-increment" placeholder="2.5">
+        </div>
+        <button class="btn-success" onclick="saveExerciseConfig()">Save Exercise</button>
+        <button class="btn-secondary" onclick="closeModals()">Cancel</button>
+        <button class="btn-danger" style="margin-top:20px" onclick="deleteExercise()">Delete Exercise</button>
+    </div>
+
+    <div id="log-modal" class="modal hidden">
+        <h2 id="log-title">Log Set</h2>
+        
+        <div id="prev-data-area" class="previous-notes hidden">
+            <strong>Last Time:</strong> <span id="prev-best-display"></span><br>
+            <strong>Note:</strong> <span id="prev-note-display"></span>
+        </div>
+
+        <div class="card" style="border: 1px solid var(--accent);">
+            <div class="card-header">
+                <span style="color:var(--accent)">TARGET FOR TODAY</span>
+            </div>
+            <div style="font-size: 20px; font-weight: bold;" id="target-display">Loading...</div>
+        </div>
+
+        <h3>Log Today's Sets</h3>
+        <div class="set-row">
+            <div class="set-label">Kg/Lbs</div>
+            <div class="set-label">Reps</div>
+            <div class="set-label">RPE</div>
+            <div></div>
+        </div>
+        <div id="sets-container"></div>
+        <button class="btn-secondary" onclick="addSetRow()">+ Add Set</button>
+        
+        <h3 style="margin-top:20px">Session Notes</h3>
+        <textarea id="session-notes" rows="3" placeholder="How did it feel? (e.g. Easy, shoulder hurt, etc)"></textarea>
+
+        <button class="btn-success" style="margin-top:20px" onclick="saveLog()">Finish Exercise</button>
+        <button class="btn-secondary" onclick="closeModals()">Cancel</button>
+    </div>
+</div>
+
+<button class="fab" onclick="openEditModal()">+</button>
+
+<script>
+    // --- State Management ---
+    let exercises = JSON.parse(localStorage.getItem('exercises')) || [];
+    let currentExerciseId = null;
+
+    function saveToLocal() {
+        localStorage.setItem('exercises', JSON.stringify(exercises));
+        renderList();
+    }
+
+    // --- Progression Logic ---
+    function calculateTarget(ex) {
+        if (!ex.history || ex.history.length === 0) {
+            return `Start: ${ex.minReps}-${ex.maxReps} reps`;
+        }
+        
+        const lastLog = ex.history[ex.history.length - 1];
+        // Find best set (highest reps at highest weight)
+        let bestSet = lastLog.sets.reduce((prev, current) => {
+            if (current.weight > prev.weight) return current;
+            if (current.weight === prev.weight && current.reps > prev.reps) return current;
+            return prev;
+        }, {weight: 0, reps: 0});
+
+        let targetWeight = bestSet.weight;
+        let targetReps = bestSet.reps;
+
+        // The Logic:
+        // 1. If Reps >= Max Range -> Increase Weight, Reset to Min Reps
+        if (bestSet.reps >= ex.maxReps) {
+            targetWeight = parseFloat(bestSet.weight) + parseFloat(ex.increment);
+            targetReps = ex.minReps;
+        } 
+        // 2. If Reps < Max Range -> Increase Reps by 1
+        else {
+            targetReps = parseInt(bestSet.reps) + 1;
+        }
+
+        return `${targetWeight}kg x ${targetReps} Reps`;
+    }
+
+    // --- Rendering ---
+    function renderList() {
+        const list = document.getElementById('exercise-list');
+        list.innerHTML = '';
+        exercises.forEach((ex, index) => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `
+                <div class="card-header">
+                    <span class="exercise-name">${ex.name}</span>
+                    <button style="width:auto; padding:5px 10px; font-size:12px; background:#333;" onclick="openEditModal(${index})">Edit</button>
+                </div>
+                <div class="target-text">Target: ${calculateTarget(ex)}</div>
+                <div style="font-size:12px; color:#666; margin-top:4px;">Range: ${ex.minReps}-${ex.maxReps} | Inc: ${ex.increment}kg</div>
+                <button class="btn-primary" onclick="openLogModal(${index})">Log Workout</button>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    // --- Modals & Actions ---
+    function closeModals() {
+        document.querySelectorAll('.modal').forEach(el => el.classList.add('hidden'));
+    }
+
+    function openEditModal(index = null) {
+        closeModals();
+        document.getElementById('edit-modal').classList.remove('hidden');
+        currentExerciseId = index;
+        
+        if (index !== null) {
+            const ex = exercises[index];
+            document.getElementById('edit-name').value = ex.name;
+            document.getElementById('edit-min-reps').value = ex.minReps;
+            document.getElementById('edit-max-reps').value = ex.maxReps;
+            document.getElementById('edit-increment').value = ex.increment;
+        } else {
+            document.getElementById('edit-name').value = '';
+            document.getElementById('edit-min-reps').value = '';
+            document.getElementById('edit-max-reps').value = '';
+            document.getElementById('edit-increment').value = '';
+        }
+    }
+
+    function saveExerciseConfig() {
+        const name = document.getElementById('edit-name').value;
+        const min = parseInt(document.getElementById('edit-min-reps').value);
+        const max = parseInt(document.getElementById('edit-max-reps').value);
+        const inc = parseFloat(document.getElementById('edit-increment').value);
+
+        if(!name || !min || !max || !inc) return alert("Please fill all fields");
+
+        const newEx = { 
+            name, 
+            minReps: min, 
+            maxReps: max, 
+            increment: inc, 
+            history: exercises[currentExerciseId]?.history || [] 
+        };
+
+        if (currentExerciseId !== null) {
+            exercises[currentExerciseId] = newEx;
+        } else {
+            exercises.push(newEx);
+        }
+        saveToLocal();
+        closeModals();
+    }
+
+    function deleteExercise() {
+        if(confirm("Delete this exercise?")) {
+            exercises.splice(currentExerciseId, 1);
+            saveToLocal();
+            closeModals();
+        }
+    }
+
+    // --- Logging Logic ---
+    function openLogModal(index) {
+        closeModals();
+        currentExerciseId = index;
+        const ex = exercises[index];
+        document.getElementById('log-modal').classList.remove('hidden');
+        document.getElementById('log-title').innerText = ex.name;
+        document.getElementById('target-display').innerText = calculateTarget(ex);
+        document.getElementById('sets-container').innerHTML = ''; // Clear prev inputs
+        
+        // Show previous notes/data if exists
+        const prevArea = document.getElementById('prev-data-area');
+        const prevNote = document.getElementById('prev-note-display');
+        const prevBest = document.getElementById('prev-best-display');
+        
+        if (ex.history && ex.history.length > 0) {
+            const last = ex.history[ex.history.length - 1];
+            prevArea.classList.remove('hidden');
+            prevNote.innerText = last.notes || "No notes.";
+            // Find best set for display
+            let best = last.sets.reduce((p, c) => (c.weight > p.weight || (c.weight == p.weight && c.reps > p.reps)) ? c : p, {weight:0, reps:0});
+            prevBest.innerText = `${best.weight}kg x ${best.reps} reps @ RPE ${best.rpe || '?'}`;
+        } else {
+            prevArea.classList.add('hidden');
+        }
+
+        // Add 3 empty set rows by default
+        addSetRow(); 
+        addSetRow();
+        addSetRow();
+        
+        document.getElementById('session-notes').value = '';
+    }
+
+    function addSetRow() {
+        const div = document.createElement('div');
+        div.className = 'set-row';
+        div.innerHTML = `
+            <input type="number" class="log-weight" placeholder="Kg">
+            <input type="number" class="log-reps" placeholder="Reps">
+            <input type="number" class="log-rpe" placeholder="RPE">
+            <button class="del-btn" onclick="this.parentElement.remove()">X</button>
+        `;
+        document.getElementById('sets-container').appendChild(div);
+    }
+
+    function saveLog() {
+        const rows = document.querySelectorAll('.set-row');
+        const sets = [];
+        
+        rows.forEach(row => {
+            const w = row.querySelector('.log-weight').value;
+            const r = row.querySelector('.log-reps').value;
+            const rpe = row.querySelector('.log-rpe').value;
+            if(w && r) {
+                sets.push({ weight: parseFloat(w), reps: parseInt(r), rpe: rpe });
+            }
+        });
+
+        if(sets.length === 0) return alert("Log at least one set!");
+
+        const note = document.getElementById('session-notes').value;
+        
+        // Save to history
+        exercises[currentExerciseId].history.push({
+            date: new Date().toISOString(),
+            sets: sets,
+            notes: note
+        });
+        
+        saveToLocal();
+        closeModals();
+    }
+
+    // Init
+    renderList();
+</script>
+</body>
+</html>
