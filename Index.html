@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Tracker V4</title>
+    <title>Pro Tracker V5</title>
     <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
 
@@ -34,10 +34,11 @@
         .target-text { color: var(--success); font-weight: 600; font-size: 15px; display: block; margin-top: 4px; }
         .meta-text { font-size: 13px; color: var(--sub); display: block; }
         .technique-badge { display: block; font-size: 12px; color: #ff9f0a; margin-top: 6px; font-style: italic; }
+        .rpe-badge { display: inline-block; font-size: 12px; color: #64d2ff; background: rgba(100, 210, 255, 0.1); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: 600; }
 
         /* Forms */
         input, select, textarea { background: #2c2c2e; border: none; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; font-size: 16px; margin-bottom: 12px; font-family: inherit; }
-        input[type="date"] { color-scheme: dark; } /* Fix for dark mode date picker */
+        input[type="date"] { color-scheme: dark; } 
         
         button { border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; width: 100%; cursor: pointer; margin-top: 8px; }
         .btn-primary { background: var(--accent); color: white; }
@@ -55,10 +56,17 @@
         /* Grid inputs */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        .grid-superset { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; } 
-
+        
+        /* Logging Rows */
         .set-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        
+        /* Superset Log Block */
+        .super-block { background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 10px; position: relative; border-left: 3px solid var(--accent); }
+        .super-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
+        .super-label { width: 15px; font-weight: bold; font-size: 14px; color: #888; }
+        
         .del-btn { width: 30px; height: 44px; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; background: #3a3a3c; color: var(--danger); }
+        .super-del { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); height: 30px; width: 30px; background: #3a3a3c; color: var(--danger); border-radius: 4px; display:flex; align-items:center; justify-content:center; cursor:pointer;}
 
     </style>
 </head>
@@ -113,7 +121,7 @@
         <input type="date" id="log-date">
     </div>
 
-    <div id="log-history" style="background:#2c2c2e; padding:12px; border-radius:10px; margin-bottom:15px; font-size:14px; border-left:3px solid var(--accent); color:#ddd; white-space: pre-line;"></div>
+    <div id="log-info-box" style="background:#2c2c2e; padding:12px; border-radius:10px; margin-bottom:15px; font-size:14px; color:#ddd; white-space: pre-line;"></div>
 
     <div id="log-target-box" style="margin-bottom:20px;"></div>
 
@@ -137,7 +145,6 @@ let dayOrder = JSON.parse(localStorage.getItem('day_order_v3')) || [];
 let activeDay = null;
 let editIndex = null;
 
-// Ensure every exercise has a unique ID for safer reordering
 exercises.forEach(ex => { if(!ex.id) ex.id = Date.now() + Math.random().toString(16).slice(2); });
 
 // --- Views & Navigation ---
@@ -152,31 +159,21 @@ function renderHome() {
     const list = document.getElementById('days-list');
     list.innerHTML = '';
     
-    // Get unique days from exercises
     let distinctDays = [...new Set(exercises.map(e => e.day))];
-    
-    // Merge with saved order (filtering out deleted days)
     dayOrder = dayOrder.filter(d => distinctDays.includes(d));
-    // Add any new days to the end
     distinctDays.forEach(d => { if(!dayOrder.includes(d)) dayOrder.push(d); });
-    
-    // Save updated order
     localStorage.setItem('day_order_v3', JSON.stringify(dayOrder));
 
-    // Fill datalist
     document.getElementById('day-list-suggestions').innerHTML = dayOrder.map(d => `<option value="${d}">`).join('');
 
-    dayOrder.forEach((day, index) => {
+    dayOrder.forEach((day) => {
         const dayExs = exercises.filter(e => e.day === day);
         const count = dayExs.length;
         
-        // Find last workout date for this day
         let lastDate = "Never";
         let timestamps = [];
         dayExs.forEach(ex => {
-            if(ex.history && ex.history.length > 0) {
-                timestamps.push(new Date(ex.history[ex.history.length-1].date).getTime());
-            }
+            if(ex.history && ex.history.length > 0) timestamps.push(new Date(ex.history[ex.history.length-1].date).getTime());
         });
         if(timestamps.length > 0) {
             const d = new Date(Math.max(...timestamps));
@@ -211,19 +208,14 @@ function renderExercises() {
     const list = document.getElementById('exercises-list');
     list.innerHTML = '';
     
-    // Get exercises for this day. 
-    // They are rendered in the order they appear in the main array.
-    // To allow reordering, we just manipulate their position in the main 'exercises' array.
-    
     exercises.forEach((ex, idx) => {
         if(ex.day !== activeDay) return;
 
         let tag = `<span class="tag tag-normal">Normal</span>`;
-        let targetHTML = '';
-
         if(ex.type === 'superset') tag = `<span class="tag tag-super">Superset</span>`;
         if(ex.type === 'giant') tag = `<span class="tag tag-giant">Giant Set</span>`;
 
+        let targetHTML = '';
         const target = calcTarget(ex); 
         
         if (ex.type === 'superset') {
@@ -235,14 +227,15 @@ function renderExercises() {
             targetHTML = `<div class="target-text">${target}</div>`;
         }
 
-        let tech = ex.tech ? `<span class="technique-badge">Reminder: ${ex.tech}</span>` : '';
+        let tech = ex.tech ? `<span class="technique-badge">Tech: ${ex.tech}</span>` : '';
+        let rpe = ex.targetRPE ? `<span class="rpe-badge">RPE: ${ex.targetRPE}</span>` : '';
 
         list.innerHTML += `
             <div class="card">
                 <div class="row" style="align-items:flex-start">
                     <div style="flex:1">
-                        ${tag}
-                        <span class="ex-title">${ex.name} ${ex.nameB ? `+ ${ex.nameB}` : ''}</span>
+                        ${tag} ${rpe}
+                        <span class="ex-title" style="margin-top:5px;">${ex.name} ${ex.nameB ? `+ ${ex.nameB}` : ''}</span>
                         ${targetHTML}
                         ${tech}
                     </div>
@@ -258,74 +251,48 @@ function renderExercises() {
     });
 }
 
-// --- Reordering Logic ---
+// --- Reordering ---
 function moveDay(dayName, direction) {
     const idx = dayOrder.indexOf(dayName);
-    if (direction === -1 && idx > 0) {
-        [dayOrder[idx], dayOrder[idx-1]] = [dayOrder[idx-1], dayOrder[idx]];
-    } else if (direction === 1 && idx < dayOrder.length - 1) {
-        [dayOrder[idx], dayOrder[idx+1]] = [dayOrder[idx+1], dayOrder[idx]];
+    if ((direction === -1 && idx > 0) || (direction === 1 && idx < dayOrder.length - 1)) {
+        [dayOrder[idx], dayOrder[idx+direction]] = [dayOrder[idx+direction], dayOrder[idx]];
+        localStorage.setItem('day_order_v3', JSON.stringify(dayOrder));
+        renderHome();
     }
-    localStorage.setItem('day_order_v3', JSON.stringify(dayOrder));
-    renderHome();
 }
 
 function moveExercise(idx, direction) {
-    // idx is the actual index in the main exercises array
-    // We need to find the "adjacent" exercise strictly within the SAME day
-    
     const ex = exercises[idx];
-    
-    // Get all indices of exercises for THIS day
     const dayIndices = exercises.map((e, i) => e.day === ex.day ? i : -1).filter(i => i !== -1);
-    
-    // Find where the current exercise is in the day-list
     const posInDay = dayIndices.indexOf(idx);
     
-    if (direction === -1 && posInDay > 0) {
-        // Swap with previous in day
-        const swapTargetIdx = dayIndices[posInDay - 1];
+    if ((direction === -1 && posInDay > 0) || (direction === 1 && posInDay < dayIndices.length - 1)) {
+        const swapTargetIdx = dayIndices[posInDay + direction];
         [exercises[idx], exercises[swapTargetIdx]] = [exercises[swapTargetIdx], exercises[idx]];
-    } 
-    else if (direction === 1 && posInDay < dayIndices.length - 1) {
-        // Swap with next in day
-        const swapTargetIdx = dayIndices[posInDay + 1];
-        [exercises[idx], exercises[swapTargetIdx]] = [exercises[swapTargetIdx], exercises[idx]];
+        localStorage.setItem('exercises_v3', JSON.stringify(exercises));
+        renderExercises();
     }
-    
-    localStorage.setItem('exercises_v3', JSON.stringify(exercises));
-    renderExercises();
 }
 
-// --- Logic Core ---
+// --- Logic ---
 function calcTarget(ex) {
     if(!ex.history || ex.history.length === 0) {
         if(ex.type === 'giant') return `Goal: ${ex.min} Total Reps`;
         if(ex.type === 'superset') return { A: `${ex.min}-${ex.max} reps`, B: `${ex.minB}-${ex.maxB} reps` };
         return `${ex.min}-${ex.max} reps`;
     }
-
     const last = ex.history[ex.history.length - 1];
-
     if(ex.type === 'giant') {
         const lastTotal = last.totalReps || 0;
         const lastWt = last.weight || 0;
-        if (lastTotal >= ex.max) {
-            return `${parseFloat(lastWt) + parseFloat(ex.inc)}kg for ${ex.min} Total Reps`;
-        } else {
-            return `${lastWt}kg for ${parseInt(lastTotal) + parseInt(ex.repInc)} Total Reps`;
-        }
+        if (lastTotal >= ex.max) return `${parseFloat(lastWt) + parseFloat(ex.inc)}kg for ${ex.min} Total Reps`;
+        else return `${lastWt}kg for ${parseInt(lastTotal) + parseInt(ex.repInc)} Total Reps`;
     }
-
     if(ex.type === 'normal') {
         const best = getBestSet(last.sets);
-        if(best.reps >= ex.max) {
-            return `${parseFloat(best.weight) + parseFloat(ex.inc)}kg x ${ex.min}-${ex.max}`;
-        } else {
-            return `${best.weight}kg x ${parseInt(best.reps) + 1}`;
-        }
+        if(best.reps >= ex.max) return `${parseFloat(best.weight) + parseFloat(ex.inc)}kg x ${ex.min}-${ex.max}`;
+        else return `${best.weight}kg x ${parseInt(best.reps) + 1}`;
     }
-
     if(ex.type === 'superset') {
         const bestA = getBestSet(last.setsA);
         const bestB = getBestSet(last.setsB);
@@ -334,7 +301,6 @@ function calcTarget(ex) {
         return { A: tA, B: tB };
     }
 }
-
 function getBestSet(sets) {
     if(!sets) return { weight:0, reps:0 };
     return sets.reduce((p, c) => {
@@ -350,28 +316,33 @@ function renderConfigFields() {
     const div = document.getElementById('cfg-dynamic-area');
     div.innerHTML = '';
 
+    // Common RPE Field
+    const rpeField = `<label class="meta-text" style="margin-top:10px;">Target RPE Range</label><input type="text" id="cfg-rpe" placeholder="e.g. 7-10 or 8RPE">`;
+
     if (type === 'normal') {
         div.innerHTML = `
             <input type="text" id="cfg-name" placeholder="Exercise Name">
+            ${rpeField}
             <div class="grid-2">
-                <input type="number" id="cfg-sets" placeholder="Target Sets (e.g. 3)">
-                <input type="number" id="cfg-inc" placeholder="Wt Increment (2.5)">
+                <input type="number" id="cfg-sets" placeholder="Sets (3)">
+                <input type="number" id="cfg-inc" placeholder="Inc (2.5)">
             </div>
             <div class="grid-2">
                 <input type="number" id="cfg-min" placeholder="Min Reps (8)">
                 <input type="number" id="cfg-max" placeholder="Max Reps (10)">
             </div>
-            <input type="text" id="cfg-tech" placeholder="Last Set Intensity (e.g. Drop Set)">
+            <input type="text" id="cfg-tech" placeholder="Intensity Tech (e.g. Drop Set)">
         `;
     } else if (type === 'superset') {
         div.innerHTML = `
             <div class="grid-2">
-                <input type="number" id="cfg-sets" placeholder="Target Sets (3)">
-                <input type="text" id="cfg-tech" placeholder="Intensity Tech (Shared)">
+                <input type="number" id="cfg-sets" placeholder="Sets (3)">
+                <input type="text" id="cfg-tech" placeholder="Shared Tech">
             </div>
+            ${rpeField}
             <hr style="border:1px solid #333; margin:10px 0;">
             <label class="meta-text" style="color:var(--accent)">Exercise A</label>
-            <input type="text" id="cfg-name" placeholder="Name (e.g. Bench)">
+            <input type="text" id="cfg-name" placeholder="Name">
             <div class="grid-3">
                 <input type="number" id="cfg-min" placeholder="Min">
                 <input type="number" id="cfg-max" placeholder="Max">
@@ -379,7 +350,7 @@ function renderConfigFields() {
             </div>
             <hr style="border:1px solid #333; margin:10px 0;">
             <label class="meta-text" style="color:#ff9f0a">Exercise B</label>
-            <input type="text" id="cfg-name-b" placeholder="Name (e.g. Flys)">
+            <input type="text" id="cfg-name-b" placeholder="Name">
             <div class="grid-3">
                 <input type="number" id="cfg-min-b" placeholder="Min">
                 <input type="number" id="cfg-max-b" placeholder="Max">
@@ -389,6 +360,7 @@ function renderConfigFields() {
     } else if (type === 'giant') {
         div.innerHTML = `
             <input type="text" id="cfg-name" placeholder="Exercise Name">
+            ${rpeField}
             <div class="grid-2">
                 <div><label class="meta-text">Start Reps</label><input type="number" id="cfg-min" value="30"></div>
                 <div><label class="meta-text">Target Reps</label><input type="number" id="cfg-max" value="70"></div>
@@ -401,16 +373,17 @@ function renderConfigFields() {
     }
 }
 
-// --- CRUD Operations ---
+// --- CRUD ---
 function saveExercise() {
     const day = document.getElementById('cfg-day').value;
     const type = document.getElementById('cfg-type').value;
     const name = document.getElementById('cfg-name').value;
-    if(!day || !name) return alert("Name and Day are required");
+    if(!day || !name) return alert("Name/Day required");
 
     let newEx = {
         id: (editIndex !== null) ? exercises[editIndex].id : Date.now() + Math.random().toString(16).slice(2),
         day, type, name,
+        targetRPE: document.getElementById('cfg-rpe').value,
         history: (editIndex !== null) ? exercises[editIndex].history : []
     };
 
@@ -448,7 +421,7 @@ function saveExercise() {
 }
 
 function deleteExercise() {
-    if(confirm("Delete this exercise?")) {
+    if(confirm("Delete exercise?")) {
         exercises.splice(editIndex, 1);
         localStorage.setItem('exercises_v3', JSON.stringify(exercises));
         closeModals();
@@ -456,44 +429,32 @@ function deleteExercise() {
     }
 }
 
-// --- Logging System ---
+// --- Logging ---
 function openLogModal(idx) {
     editIndex = idx;
     const ex = exercises[idx];
     document.getElementById('modal-log').classList.remove('hidden');
     document.getElementById('log-title').innerText = ex.name;
-    
-    // Set Date Picker to Today
     document.getElementById('log-date').valueAsDate = new Date();
+
+    const infoBox = document.getElementById('log-info-box');
+    let historyText = (ex.history && ex.history.length > 0) ? `Last Note: ${ex.history[ex.history.length - 1].notes || '-'}` : "No history.";
+    infoBox.innerHTML = `${historyText}<br><span style="color:#64d2ff; font-weight:bold;">Plan RPE: ${ex.targetRPE || 'Not set'}</span>`;
+
+    const targetDiv = document.getElementById('log-target-box');
+    const t = calcTarget(ex);
+    if(ex.type === 'superset') targetDiv.innerHTML = `<div style="color:var(--accent)">A: ${t.A}</div><div style="color:#ff9f0a">B: ${t.B}</div>`;
+    else targetDiv.innerHTML = `<div style="color:var(--success); font-size:18px; font-weight:bold;">${t}</div>`;
 
     const container = document.getElementById('log-inputs');
     container.innerHTML = '';
-
-    // History
-    const histDiv = document.getElementById('log-history');
-    if(ex.history && ex.history.length > 0) {
-        const last = ex.history[ex.history.length - 1];
-        histDiv.innerText = `Last Note: ${last.notes || '-'}`;
-    } else {
-        histDiv.innerText = "No previous history.";
-    }
-
-    // Targets
-    const targetDiv = document.getElementById('log-target-box');
-    const t = calcTarget(ex);
-    if(ex.type === 'superset') {
-        targetDiv.innerHTML = `<div style="color:var(--accent)">A: ${t.A}</div><div style="color:#ff9f0a">B: ${t.B}</div>`;
-    } else {
-        targetDiv.innerHTML = `<div style="color:var(--success); font-size:18px; font-weight:bold;">${t}</div>`;
-    }
-
-    // Inputs
     document.getElementById('btn-add-set').classList.remove('hidden'); 
+
     if(ex.type === 'giant') {
         document.getElementById('btn-add-set').classList.add('hidden');
         container.innerHTML = `
             <div class="grid-2">
-                <div><label class="meta-text">Weight Used</label><input type="number" id="log-g-wt"></div>
+                <div><label class="meta-text">Weight</label><input type="number" id="log-g-wt"></div>
                 <div><label class="meta-text">Total Reps</label><input type="number" id="log-g-reps"></div>
             </div>
             <p class="meta-text">Rest-pause until you can't continue.</p>
@@ -509,16 +470,24 @@ function addSetInputRow(forcedType) {
     const ex = exercises[editIndex];
     const type = forcedType || ex.type;
     const div = document.createElement('div');
+    
     if(type === 'superset') {
-        div.className = 'set-row';
+        div.className = 'super-block';
         div.innerHTML = `
-            <div class="grid-superset" style="flex:1">
-                <input type="number" class="l-w-a" placeholder="A Kg">
-                <input type="number" class="l-r-a" placeholder="A Rep">
-                <input type="number" class="l-w-b" placeholder="B Kg">
-                <input type="number" class="l-r-b" placeholder="B Rep">
+            <div class="super-row">
+                <div class="super-label">A</div>
+                <input type="number" class="l-w-a" placeholder="Kg">
+                <input type="number" class="l-r-a" placeholder="Reps">
+                <input type="number" class="l-rpe-a" placeholder="RPE">
             </div>
-            <button class="del-btn" onclick="this.parentElement.remove()">X</button>`;
+            <div class="super-row">
+                <div class="super-label">B</div>
+                <input type="number" class="l-w-b" placeholder="Kg">
+                <input type="number" class="l-r-b" placeholder="Reps">
+                <input type="number" class="l-rpe-b" placeholder="RPE">
+            </div>
+            <div class="super-del" onclick="this.parentElement.remove()">X</div>
+        `;
     } else {
         div.className = 'set-row';
         div.innerHTML = `
@@ -532,55 +501,37 @@ function addSetInputRow(forcedType) {
 
 function saveLog() {
     const ex = exercises[editIndex];
-    const note = document.getElementById('log-notes').value;
-    const dateInput = document.getElementById('log-date').value;
-    
-    // Create Date Object from picker (safe for local storage)
-    const entry = { 
-        date: dateInput ? new Date(dateInput).toISOString() : new Date().toISOString(), 
-        notes: note 
-    };
+    const entry = { date: document.getElementById('log-date').value || new Date().toISOString(), notes: document.getElementById('log-notes').value };
 
     if(ex.type === 'giant') {
         const w = document.getElementById('log-g-wt').value;
         const r = document.getElementById('log-g-reps').value;
         if(!w || !r) return alert("Fill data");
-        entry.weight = w;
-        entry.totalReps = r;
+        entry.weight = w; entry.totalReps = r;
     } else if (ex.type === 'superset') {
-        const rows = document.querySelectorAll('.set-row');
+        const blocks = document.querySelectorAll('.super-block');
         const sA = [], sB = [];
-        rows.forEach(r => {
-            const wa = r.querySelector('.l-w-a').value;
-            const ra = r.querySelector('.l-r-a').value;
-            const wb = r.querySelector('.l-w-b').value;
-            const rb = r.querySelector('.l-r-b').value;
-            if(wa) sA.push({weight: wa, reps: ra});
-            if(wb) sB.push({weight: wb, reps: rb});
+        blocks.forEach(b => {
+            sA.push({ weight: b.querySelector('.l-w-a').value, reps: b.querySelector('.l-r-a').value, rpe: b.querySelector('.l-rpe-a').value });
+            sB.push({ weight: b.querySelector('.l-w-b').value, reps: b.querySelector('.l-r-b').value, rpe: b.querySelector('.l-rpe-b').value });
         });
         if(sA.length === 0) return alert("Log data");
-        entry.setsA = sA;
-        entry.setsB = sB;
+        entry.setsA = sA; entry.setsB = sB;
     } else {
         const rows = document.querySelectorAll('.set-row');
         const sets = [];
         rows.forEach(r => {
             const w = r.querySelector('.l-w').value;
-            const rp = r.querySelector('.l-r').value;
-            const rpe = r.querySelector('.l-rpe').value;
-            if(w) sets.push({weight: w, reps: rp, rpe: rpe});
+            if(w) sets.push({weight: w, reps: r.querySelector('.l-r').value, rpe: r.querySelector('.l-rpe').value});
         });
         if(sets.length === 0) return alert("Log data");
         entry.sets = sets;
     }
-
     ex.history.push(entry);
     localStorage.setItem('exercises_v3', JSON.stringify(exercises));
     closeModals();
     renderExercises();
-    if(activeDay) renderExercises(); // Refresh to update targets
 }
-
 function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); }
 function openEditModal(idx = null) {
     document.getElementById('modal-edit').classList.remove('hidden');
@@ -596,6 +547,7 @@ function openEditModal(idx = null) {
         renderConfigFields();
         setTimeout(() => {
             document.getElementById('cfg-name').value = ex.name;
+            document.getElementById('cfg-rpe').value = ex.targetRPE || '';
             document.getElementById('cfg-inc').value = ex.inc;
             document.getElementById('cfg-min').value = ex.min;
             document.getElementById('cfg-max').value = ex.max;
@@ -611,9 +563,7 @@ function openEditModal(idx = null) {
                 document.getElementById('cfg-max-b').value = ex.maxB;
                 document.getElementById('cfg-inc-b').value = ex.incB;
             }
-            if(ex.type === 'giant') {
-                document.getElementById('cfg-rep-inc').value = ex.repInc;
-            }
+            if(ex.type === 'giant') document.getElementById('cfg-rep-inc').value = ex.repInc;
         }, 50);
     } else {
         document.getElementById('cfg-day').value = activeDay || '';
@@ -621,13 +571,7 @@ function openEditModal(idx = null) {
         renderConfigFields();
     }
 }
-function resetAllData() {
-    if(confirm("Delete ALL history?")) {
-        localStorage.removeItem('exercises_v3');
-        localStorage.removeItem('day_order_v3');
-        location.reload();
-    }
-}
+function resetAllData() { if(confirm("Delete ALL history?")) { localStorage.removeItem('exercises_v3'); localStorage.removeItem('day_order_v3'); location.reload(); } }
 
 renderHome();
 </script>
