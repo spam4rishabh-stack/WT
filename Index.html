@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Tracker V3</title>
+    <title>Pro Tracker V4</title>
     <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
 
     <style>
-        :root { --bg: #121212; --card: #1c1c1e; --text: #f2f2f7; --accent: #0a84ff; --success: #30d158; --danger: #ff453a; --sub: #8e8e93; }
+        :root { --bg: #000000; --card: #1c1c1e; --text: #f2f2f7; --accent: #0a84ff; --success: #30d158; --danger: #ff453a; --sub: #8e8e93; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
         
         /* Layout */
         .container { padding: 16px; max-width: 600px; margin: 0 auto; }
         h1 { font-size: 28px; font-weight: 800; margin: 0 0 20px 0; letter-spacing: -0.5px; }
-        h2 { margin: 0 0 10px 0; font-size: 20px; }
         
         /* Components */
         .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; position: relative; border: 1px solid #2c2c2e; }
@@ -24,17 +23,21 @@
         .tag-giant { background: rgba(191, 90, 242, 0.15); color: #bf5af2; }
         
         .row { display: flex; justify-content: space-between; align-items: center; }
-        .btn-text { background: none; border: none; color: var(--accent); font-size: 14px; font-weight: 600; padding: 5px; }
+        .row-start { display: flex; justify-content: flex-start; align-items: center; gap: 10px; }
+        
+        .btn-icon { background: none; border: none; color: var(--accent); font-size: 18px; padding: 8px; cursor: pointer; }
+        .btn-icon.danger { color: var(--danger); }
+        .btn-move { color: var(--sub); font-size: 14px; padding: 4px 8px; background: #2c2c2e; border-radius: 4px; margin-left: 4px; }
         
         /* Typography */
         .ex-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; display: block;}
         .target-text { color: var(--success); font-weight: 600; font-size: 15px; display: block; margin-top: 4px; }
-        .meta-text { font-size: 13px; color: var(--sub); margin-top: 4px; display: block; }
+        .meta-text { font-size: 13px; color: var(--sub); display: block; }
         .technique-badge { display: block; font-size: 12px; color: #ff9f0a; margin-top: 6px; font-style: italic; }
 
         /* Forms */
         input, select, textarea { background: #2c2c2e; border: none; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; font-size: 16px; margin-bottom: 12px; font-family: inherit; }
-        input:focus { outline: 2px solid var(--accent); }
+        input[type="date"] { color-scheme: dark; } /* Fix for dark mode date picker */
         
         button { border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; width: 100%; cursor: pointer; margin-top: 8px; }
         .btn-primary { background: var(--accent); color: white; }
@@ -52,7 +55,7 @@
         /* Grid inputs */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        .grid-superset { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; } /* W1 R1 W2 R2 */
+        .grid-superset { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; } 
 
         .set-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
         .del-btn { width: 30px; height: 44px; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; background: #3a3a3c; color: var(--danger); }
@@ -66,14 +69,14 @@
         <div class="row"><h1>My Program</h1></div>
         <div id="days-list"></div>
         <div style="margin-top:50px; text-align:center;">
-             <button class="btn-text" style="color: #444; font-size:12px;" onclick="resetAllData()">Reset All Data</button>
+             <button class="btn-icon danger" style="font-size:12px;" onclick="resetAllData()">Reset All Data</button>
         </div>
     </div>
 
     <div id="view-day" class="hidden">
         <div class="row" style="margin-bottom: 20px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <button class="btn-text" style="font-size:24px; padding:0;" onclick="goHome()">&#8592;</button>
+            <div class="row-start">
+                <button class="btn-icon" style="font-size:24px; padding:0;" onclick="goHome()">&#8592;</button>
                 <h1 id="day-title" style="margin:0;">Day</h1>
             </div>
         </div>
@@ -105,6 +108,11 @@
 <div id="modal-log" class="modal hidden">
     <h2 id="log-title">Log Workout</h2>
     
+    <div style="margin-bottom:15px;">
+        <label class="meta-text">Workout Date</label>
+        <input type="date" id="log-date">
+    </div>
+
     <div id="log-history" style="background:#2c2c2e; padding:12px; border-radius:10px; margin-bottom:15px; font-size:14px; border-left:3px solid var(--accent); color:#ddd; white-space: pre-line;"></div>
 
     <div id="log-target-box" style="margin-bottom:20px;"></div>
@@ -125,10 +133,218 @@
 <script>
 // --- Data State ---
 let exercises = JSON.parse(localStorage.getItem('exercises_v3')) || [];
+let dayOrder = JSON.parse(localStorage.getItem('day_order_v3')) || [];
 let activeDay = null;
 let editIndex = null;
 
-// --- Config Renderers ---
+// Ensure every exercise has a unique ID for safer reordering
+exercises.forEach(ex => { if(!ex.id) ex.id = Date.now() + Math.random().toString(16).slice(2); });
+
+// --- Views & Navigation ---
+function goHome() {
+    activeDay = null;
+    document.getElementById('view-home').classList.remove('hidden');
+    document.getElementById('view-day').classList.add('hidden');
+    renderHome();
+}
+
+function renderHome() {
+    const list = document.getElementById('days-list');
+    list.innerHTML = '';
+    
+    // Get unique days from exercises
+    let distinctDays = [...new Set(exercises.map(e => e.day))];
+    
+    // Merge with saved order (filtering out deleted days)
+    dayOrder = dayOrder.filter(d => distinctDays.includes(d));
+    // Add any new days to the end
+    distinctDays.forEach(d => { if(!dayOrder.includes(d)) dayOrder.push(d); });
+    
+    // Save updated order
+    localStorage.setItem('day_order_v3', JSON.stringify(dayOrder));
+
+    // Fill datalist
+    document.getElementById('day-list-suggestions').innerHTML = dayOrder.map(d => `<option value="${d}">`).join('');
+
+    dayOrder.forEach((day, index) => {
+        const dayExs = exercises.filter(e => e.day === day);
+        const count = dayExs.length;
+        
+        // Find last workout date for this day
+        let lastDate = "Never";
+        let timestamps = [];
+        dayExs.forEach(ex => {
+            if(ex.history && ex.history.length > 0) {
+                timestamps.push(new Date(ex.history[ex.history.length-1].date).getTime());
+            }
+        });
+        if(timestamps.length > 0) {
+            const d = new Date(Math.max(...timestamps));
+            lastDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        list.innerHTML += `
+            <div class="card">
+                <div class="row">
+                    <div onclick="openDay('${day}')" style="flex:1; cursor:pointer;">
+                        <span class="ex-title">${day}</span>
+                        <span class="meta-text">${count} Exercises • Last: ${lastDate}</span>
+                    </div>
+                    <div>
+                        <button class="btn-move" onclick="moveDay('${day}', -1)">▲</button>
+                        <button class="btn-move" onclick="moveDay('${day}', 1)">▼</button>
+                    </div>
+                </div>
+            </div>`;
+    });
+}
+
+function openDay(day) {
+    activeDay = day;
+    document.getElementById('view-home').classList.add('hidden');
+    document.getElementById('view-day').classList.remove('hidden');
+    document.getElementById('day-title').innerText = day;
+    renderExercises();
+}
+
+function renderExercises() {
+    const list = document.getElementById('exercises-list');
+    list.innerHTML = '';
+    
+    // Get exercises for this day. 
+    // They are rendered in the order they appear in the main array.
+    // To allow reordering, we just manipulate their position in the main 'exercises' array.
+    
+    exercises.forEach((ex, idx) => {
+        if(ex.day !== activeDay) return;
+
+        let tag = `<span class="tag tag-normal">Normal</span>`;
+        let targetHTML = '';
+
+        if(ex.type === 'superset') tag = `<span class="tag tag-super">Superset</span>`;
+        if(ex.type === 'giant') tag = `<span class="tag tag-giant">Giant Set</span>`;
+
+        const target = calcTarget(ex); 
+        
+        if (ex.type === 'superset') {
+            targetHTML = `
+                <div class="target-text"><span style="color:var(--accent)">A:</span> ${target.A}</div>
+                <div class="target-text"><span style="color:#ff9f0a">B:</span> ${target.B}</div>
+            `;
+        } else {
+            targetHTML = `<div class="target-text">${target}</div>`;
+        }
+
+        let tech = ex.tech ? `<span class="technique-badge">Reminder: ${ex.tech}</span>` : '';
+
+        list.innerHTML += `
+            <div class="card">
+                <div class="row" style="align-items:flex-start">
+                    <div style="flex:1">
+                        ${tag}
+                        <span class="ex-title">${ex.name} ${ex.nameB ? `+ ${ex.nameB}` : ''}</span>
+                        ${targetHTML}
+                        ${tech}
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:4px; margin-left:10px;">
+                        <button class="btn-move" onclick="moveExercise(${idx}, -1)">▲</button>
+                        <button class="btn-move" onclick="moveExercise(${idx}, 1)">▼</button>
+                        <button class="btn-text" style="font-size:12px; margin-top:5px;" onclick="openEditModal(${idx})">Edit</button>
+                    </div>
+                </div>
+                <button class="btn-primary" style="margin-top:12px;" onclick="openLogModal(${idx})">Log</button>
+            </div>
+        `;
+    });
+}
+
+// --- Reordering Logic ---
+function moveDay(dayName, direction) {
+    const idx = dayOrder.indexOf(dayName);
+    if (direction === -1 && idx > 0) {
+        [dayOrder[idx], dayOrder[idx-1]] = [dayOrder[idx-1], dayOrder[idx]];
+    } else if (direction === 1 && idx < dayOrder.length - 1) {
+        [dayOrder[idx], dayOrder[idx+1]] = [dayOrder[idx+1], dayOrder[idx]];
+    }
+    localStorage.setItem('day_order_v3', JSON.stringify(dayOrder));
+    renderHome();
+}
+
+function moveExercise(idx, direction) {
+    // idx is the actual index in the main exercises array
+    // We need to find the "adjacent" exercise strictly within the SAME day
+    
+    const ex = exercises[idx];
+    
+    // Get all indices of exercises for THIS day
+    const dayIndices = exercises.map((e, i) => e.day === ex.day ? i : -1).filter(i => i !== -1);
+    
+    // Find where the current exercise is in the day-list
+    const posInDay = dayIndices.indexOf(idx);
+    
+    if (direction === -1 && posInDay > 0) {
+        // Swap with previous in day
+        const swapTargetIdx = dayIndices[posInDay - 1];
+        [exercises[idx], exercises[swapTargetIdx]] = [exercises[swapTargetIdx], exercises[idx]];
+    } 
+    else if (direction === 1 && posInDay < dayIndices.length - 1) {
+        // Swap with next in day
+        const swapTargetIdx = dayIndices[posInDay + 1];
+        [exercises[idx], exercises[swapTargetIdx]] = [exercises[swapTargetIdx], exercises[idx]];
+    }
+    
+    localStorage.setItem('exercises_v3', JSON.stringify(exercises));
+    renderExercises();
+}
+
+// --- Logic Core ---
+function calcTarget(ex) {
+    if(!ex.history || ex.history.length === 0) {
+        if(ex.type === 'giant') return `Goal: ${ex.min} Total Reps`;
+        if(ex.type === 'superset') return { A: `${ex.min}-${ex.max} reps`, B: `${ex.minB}-${ex.maxB} reps` };
+        return `${ex.min}-${ex.max} reps`;
+    }
+
+    const last = ex.history[ex.history.length - 1];
+
+    if(ex.type === 'giant') {
+        const lastTotal = last.totalReps || 0;
+        const lastWt = last.weight || 0;
+        if (lastTotal >= ex.max) {
+            return `${parseFloat(lastWt) + parseFloat(ex.inc)}kg for ${ex.min} Total Reps`;
+        } else {
+            return `${lastWt}kg for ${parseInt(lastTotal) + parseInt(ex.repInc)} Total Reps`;
+        }
+    }
+
+    if(ex.type === 'normal') {
+        const best = getBestSet(last.sets);
+        if(best.reps >= ex.max) {
+            return `${parseFloat(best.weight) + parseFloat(ex.inc)}kg x ${ex.min}-${ex.max}`;
+        } else {
+            return `${best.weight}kg x ${parseInt(best.reps) + 1}`;
+        }
+    }
+
+    if(ex.type === 'superset') {
+        const bestA = getBestSet(last.setsA);
+        const bestB = getBestSet(last.setsB);
+        let tA = (bestA.reps >= ex.max) ? `${parseFloat(bestA.weight) + parseFloat(ex.inc)}kg` : `${bestA.weight}kg x ${parseInt(bestA.reps) + 1}`;
+        let tB = (bestB.reps >= ex.maxB) ? `${parseFloat(bestB.weight) + parseFloat(ex.incB)}kg` : `${bestB.weight}kg x ${parseInt(bestB.reps) + 1}`;
+        return { A: tA, B: tB };
+    }
+}
+
+function getBestSet(sets) {
+    if(!sets) return { weight:0, reps:0 };
+    return sets.reduce((p, c) => {
+        if(parseFloat(c.weight) > parseFloat(p.weight)) return c;
+        if(parseFloat(c.weight) == parseFloat(p.weight) && parseInt(c.reps) > parseInt(p.reps)) return c;
+        return p;
+    }, {weight:0, reps:0});
+}
+
+// --- Config Renderer ---
 function renderConfigFields() {
     const type = document.getElementById('cfg-type').value;
     const div = document.getElementById('cfg-dynamic-area');
@@ -181,145 +397,8 @@ function renderConfigFields() {
                 <div><label class="meta-text">Add Reps/Wk</label><input type="number" id="cfg-rep-inc" value="10"></div>
                 <div><label class="meta-text">Wt Increment</label><input type="number" id="cfg-inc" value="5"></div>
             </div>
-            <p class="meta-text" style="color:var(--sub)">Goal: Hit Target Reps total. Then Weight goes up, Reps reset to Start.</p>
         `;
     }
-}
-
-// --- Views & Navigation ---
-function goHome() {
-    activeDay = null;
-    document.getElementById('view-home').classList.remove('hidden');
-    document.getElementById('view-day').classList.add('hidden');
-    renderHome();
-}
-
-function renderHome() {
-    const list = document.getElementById('days-list');
-    list.innerHTML = '';
-    const days = [...new Set(exercises.map(e => e.day))].sort();
-    
-    // Fill datalist
-    const dl = document.getElementById('day-list-suggestions');
-    dl.innerHTML = days.map(d => `<option value="${d}">`).join('');
-
-    days.forEach(day => {
-        const count = exercises.filter(e => e.day === day).length;
-        list.innerHTML += `
-            <div class="card" onclick="openDay('${day}')">
-                <div class="row">
-                    <span class="ex-title">${day}</span>
-                    <span style="color:#666;">${count} ></span>
-                </div>
-            </div>`;
-    });
-}
-
-function openDay(day) {
-    activeDay = day;
-    document.getElementById('view-home').classList.add('hidden');
-    document.getElementById('view-day').classList.remove('hidden');
-    document.getElementById('day-title').innerText = day;
-    renderExercises();
-}
-
-function renderExercises() {
-    const list = document.getElementById('exercises-list');
-    list.innerHTML = '';
-    
-    exercises.forEach((ex, idx) => {
-        if(ex.day !== activeDay) return;
-
-        let tag = `<span class="tag tag-normal">Normal</span>`;
-        let targetHTML = '';
-
-        if(ex.type === 'superset') tag = `<span class="tag tag-super">Superset</span>`;
-        if(ex.type === 'giant') tag = `<span class="tag tag-giant">Giant Set</span>`;
-
-        const target = calcTarget(ex); // Returns string or object
-        
-        if (ex.type === 'superset') {
-            targetHTML = `
-                <div class="target-text"><span style="color:var(--accent)">A:</span> ${target.A}</div>
-                <div class="target-text"><span style="color:#ff9f0a">B:</span> ${target.B}</div>
-            `;
-        } else {
-            targetHTML = `<div class="target-text">${target}</div>`;
-        }
-
-        let tech = ex.tech ? `<span class="technique-badge">Reminder: ${ex.tech}</span>` : '';
-
-        list.innerHTML += `
-            <div class="card">
-                <div class="row">
-                    <div>
-                        ${tag}
-                        <span class="ex-title">${ex.name} ${ex.nameB ? `+ ${ex.nameB}` : ''}</span>
-                    </div>
-                    <button class="btn-text" onclick="openEditModal(${idx})">Edit</button>
-                </div>
-                ${targetHTML}
-                ${tech}
-                <button class="btn-primary" onclick="openLogModal(${idx})">Log</button>
-            </div>
-        `;
-    });
-}
-
-// --- Logic Core ---
-function calcTarget(ex) {
-    if(!ex.history || ex.history.length === 0) {
-        if(ex.type === 'giant') return `Goal: ${ex.min} Total Reps`;
-        if(ex.type === 'superset') return { A: `${ex.min}-${ex.max} reps`, B: `${ex.minB}-${ex.maxB} reps` };
-        return `${ex.min}-${ex.max} reps`;
-    }
-
-    const last = ex.history[ex.history.length - 1];
-
-    if(ex.type === 'giant') {
-        const lastTotal = last.totalReps || 0;
-        const lastWt = last.weight || 0;
-        // Giant Logic: If hit max target, reset reps, inc weight. Else add 10 reps.
-        if (lastTotal >= ex.max) {
-            return `${parseFloat(lastWt) + parseFloat(ex.inc)}kg for ${ex.min} Total Reps`;
-        } else {
-            return `${lastWt}kg for ${parseInt(lastTotal) + parseInt(ex.repInc)} Total Reps`;
-        }
-    }
-
-    if(ex.type === 'normal') {
-        const best = getBestSet(last.sets);
-        if(best.reps >= ex.max) {
-            return `${parseFloat(best.weight) + parseFloat(ex.inc)}kg x ${ex.min}-${ex.max}`;
-        } else {
-            return `${best.weight}kg x ${parseInt(best.reps) + 1}`;
-        }
-    }
-
-    if(ex.type === 'superset') {
-        // Independent Double Progression
-        const bestA = getBestSet(last.setsA);
-        const bestB = getBestSet(last.setsB);
-        
-        let tA = (bestA.reps >= ex.max) 
-            ? `${parseFloat(bestA.weight) + parseFloat(ex.inc)}kg x ${ex.min}` 
-            : `${bestA.weight}kg x ${parseInt(bestA.reps) + 1}`;
-            
-        let tB = (bestB.reps >= ex.maxB) 
-            ? `${parseFloat(bestB.weight) + parseFloat(ex.incB)}kg x ${ex.minB}` 
-            : `${bestB.weight}kg x ${parseInt(bestB.reps) + 1}`;
-
-        return { A: tA, B: tB };
-    }
-}
-
-function getBestSet(sets) {
-    if(!sets) return { weight:0, reps:0 };
-    return sets.reduce((p, c) => {
-        if(parseFloat(c.weight) > parseFloat(p.weight)) return c;
-        if(parseFloat(c.weight) == parseFloat(p.weight) && parseInt(c.reps) > parseInt(p.reps)) return c;
-        return p;
-    }, {weight:0, reps:0});
 }
 
 // --- CRUD Operations ---
@@ -330,6 +409,7 @@ function saveExercise() {
     if(!day || !name) return alert("Name and Day are required");
 
     let newEx = {
+        id: (editIndex !== null) ? exercises[editIndex].id : Date.now() + Math.random().toString(16).slice(2),
         day, type, name,
         history: (editIndex !== null) ? exercises[editIndex].history : []
     };
@@ -347,17 +427,16 @@ function saveExercise() {
         newEx.min = document.getElementById('cfg-min').value;
         newEx.max = document.getElementById('cfg-max').value;
         newEx.inc = document.getElementById('cfg-inc').value;
-        
         newEx.nameB = document.getElementById('cfg-name-b').value;
         newEx.minB = document.getElementById('cfg-min-b').value;
         newEx.maxB = document.getElementById('cfg-max-b').value;
         newEx.incB = document.getElementById('cfg-inc-b').value;
     } 
     else if (type === 'giant') {
-        newEx.min = document.getElementById('cfg-min').value; // Start Reps
-        newEx.max = document.getElementById('cfg-max').value; // Target Reps
+        newEx.min = document.getElementById('cfg-min').value;
+        newEx.max = document.getElementById('cfg-max').value;
         newEx.repInc = document.getElementById('cfg-rep-inc').value; 
-        newEx.inc = document.getElementById('cfg-inc').value; // Wt Inc
+        newEx.inc = document.getElementById('cfg-inc').value;
     }
 
     if(editIndex !== null) exercises[editIndex] = newEx;
@@ -383,10 +462,14 @@ function openLogModal(idx) {
     const ex = exercises[idx];
     document.getElementById('modal-log').classList.remove('hidden');
     document.getElementById('log-title').innerText = ex.name;
+    
+    // Set Date Picker to Today
+    document.getElementById('log-date').valueAsDate = new Date();
+
     const container = document.getElementById('log-inputs');
     container.innerHTML = '';
 
-    // Render Previous Data
+    // History
     const histDiv = document.getElementById('log-history');
     if(ex.history && ex.history.length > 0) {
         const last = ex.history[ex.history.length - 1];
@@ -395,7 +478,7 @@ function openLogModal(idx) {
         histDiv.innerText = "No previous history.";
     }
 
-    // Render Targets
+    // Targets
     const targetDiv = document.getElementById('log-target-box');
     const t = calcTarget(ex);
     if(ex.type === 'superset') {
@@ -404,11 +487,10 @@ function openLogModal(idx) {
         targetDiv.innerHTML = `<div style="color:var(--success); font-size:18px; font-weight:bold;">${t}</div>`;
     }
 
-    // Render Inputs based on Type
-    document.getElementById('btn-add-set').classList.remove('hidden'); // Show by default
-
+    // Inputs
+    document.getElementById('btn-add-set').classList.remove('hidden'); 
     if(ex.type === 'giant') {
-        document.getElementById('btn-add-set').classList.add('hidden'); // Hide for Giant
+        document.getElementById('btn-add-set').classList.add('hidden');
         container.innerHTML = `
             <div class="grid-2">
                 <div><label class="meta-text">Weight Used</label><input type="number" id="log-g-wt"></div>
@@ -417,12 +499,9 @@ function openLogModal(idx) {
             <p class="meta-text">Rest-pause until you can't continue.</p>
         `;
     } else {
-        // Normal & Superset use rows
-        // Pre-fill number of sets from Config
         const count = ex.sets || 3;
         for(let i=0; i<count; i++) addSetInputRow(ex.type);
     }
-    
     document.getElementById('log-notes').value = '';
 }
 
@@ -430,7 +509,6 @@ function addSetInputRow(forcedType) {
     const ex = exercises[editIndex];
     const type = forcedType || ex.type;
     const div = document.createElement('div');
-    
     if(type === 'superset') {
         div.className = 'set-row';
         div.innerHTML = `
@@ -440,17 +518,14 @@ function addSetInputRow(forcedType) {
                 <input type="number" class="l-w-b" placeholder="B Kg">
                 <input type="number" class="l-r-b" placeholder="B Rep">
             </div>
-            <button class="del-btn" onclick="this.parentElement.remove()">X</button>
-        `;
+            <button class="del-btn" onclick="this.parentElement.remove()">X</button>`;
     } else {
-        // Normal
         div.className = 'set-row';
         div.innerHTML = `
             <input type="number" class="l-w" placeholder="Kg">
             <input type="number" class="l-r" placeholder="Reps">
             <input type="number" class="l-rpe" placeholder="RPE">
-            <button class="del-btn" onclick="this.parentElement.remove()">X</button>
-        `;
+            <button class="del-btn" onclick="this.parentElement.remove()">X</button>`;
     }
     document.getElementById('log-inputs').appendChild(div);
 }
@@ -458,7 +533,13 @@ function addSetInputRow(forcedType) {
 function saveLog() {
     const ex = exercises[editIndex];
     const note = document.getElementById('log-notes').value;
-    const entry = { date: new Date().toISOString(), notes: note };
+    const dateInput = document.getElementById('log-date').value;
+    
+    // Create Date Object from picker (safe for local storage)
+    const entry = { 
+        date: dateInput ? new Date(dateInput).toISOString() : new Date().toISOString(), 
+        notes: note 
+    };
 
     if(ex.type === 'giant') {
         const w = document.getElementById('log-g-wt').value;
@@ -497,35 +578,27 @@ function saveLog() {
     localStorage.setItem('exercises_v3', JSON.stringify(exercises));
     closeModals();
     renderExercises();
+    if(activeDay) renderExercises(); // Refresh to update targets
 }
 
-// --- Utils ---
-function closeModals() {
-    document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
-}
+function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); }
 function openEditModal(idx = null) {
     document.getElementById('modal-edit').classList.remove('hidden');
     editIndex = idx;
-    
-    // Reset fields
     document.getElementById('cfg-dynamic-area').innerHTML = '';
     document.getElementById('cfg-type').value = 'normal';
     
     if(idx !== null) {
-        // Load Data
         const ex = exercises[idx];
         document.getElementById('cfg-day').value = ex.day;
         document.getElementById('cfg-type').value = ex.type;
         document.getElementById('btn-delete').classList.remove('hidden');
         renderConfigFields();
-        
-        // Fill dynamic
         setTimeout(() => {
             document.getElementById('cfg-name').value = ex.name;
             document.getElementById('cfg-inc').value = ex.inc;
             document.getElementById('cfg-min').value = ex.min;
             document.getElementById('cfg-max').value = ex.max;
-            
             if(ex.type === 'normal') {
                 document.getElementById('cfg-sets').value = ex.sets;
                 document.getElementById('cfg-tech').value = ex.tech || '';
@@ -549,13 +622,13 @@ function openEditModal(idx = null) {
     }
 }
 function resetAllData() {
-    if(confirm("Delete ALL history and exercises? Cannot be undone.")) {
+    if(confirm("Delete ALL history?")) {
         localStorage.removeItem('exercises_v3');
+        localStorage.removeItem('day_order_v3');
         location.reload();
     }
 }
 
-// Init
 renderHome();
 </script>
 </body>
