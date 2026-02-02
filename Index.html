@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Tracker V6</title>
+    <title>Pro Tracker Final</title>
     <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,27 +11,18 @@
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --text: #f2f2f7; --accent: #0a84ff; --success: #30d158; --danger: #ff453a; --sub: #8e8e93; --border: #2c2c2e; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
-        
-        /* Layout */
         .container { padding: 16px; max-width: 600px; margin: 0 auto; }
         h1 { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
-        
-        /* Components */
         .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; position: relative; border: 1px solid var(--border); }
         .row { display: flex; justify-content: space-between; align-items: center; }
         .row-start { display: flex; justify-content: flex-start; align-items: center; gap: 10px; }
-        
         .btn-icon { background: none; border: none; color: var(--accent); font-size: 18px; padding: 8px; cursor: pointer; }
         .btn-move { color: var(--sub); font-size: 14px; padding: 4px 8px; background: #2c2c2e; border-radius: 4px; margin-left: 4px; }
-        
-        /* Typography */
         .ex-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; display: block;}
         .meta-text { font-size: 13px; color: var(--sub); display: block; }
         .target-pill { display: inline-block; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; margin-top: 5px; color: #000; background: var(--success); }
         .target-pill.regress { background: var(--danger); color: white; }
         .target-pill.hold { background: #ff9f0a; color: white; }
-
-        /* Forms */
         input, select, textarea { background: #2c2c2e; border: none; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; font-size: 16px; margin-bottom: 12px; font-family: inherit; }
         input[type="date"] { color-scheme: dark; } 
         button { border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; width: 100%; cursor: pointer; margin-top: 8px; }
@@ -40,26 +31,14 @@
         .btn-success { background: var(--success); color: black; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-small { padding: 8px 16px; font-size: 13px; width: auto; margin:0; }
-
-        /* Modals */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 100; overflow-y: auto; padding: 20px; box-sizing: border-box; }
         .hidden { display: none !important; }
-
-        /* Inputs & Tables */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        
         .set-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 12px; align-items: center; }
-        .prev-stat-row { font-size: 11px; color: var(--sub); text-align: center; margin-bottom: 2px; }
-        
         .history-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
         .history-table th, .history-table td { border: 1px solid #333; padding: 8px; text-align: center; color: #ddd; }
         .history-table th { background: #222; color: var(--accent); }
-
-        /* Chart Container */
         .chart-container { position: relative; height: 250px; width: 100%; margin-bottom: 20px; }
-
-        /* Floating Button */
         .fab { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 30px; background: var(--accent); color: white; font-size: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(10,132,255,0.4); border: none; z-index: 50; }
     </style>
 </head>
@@ -69,9 +48,12 @@
     <div id="view-home">
         <div class="row" style="margin-bottom:20px">
             <h1>My Program</h1>
-            <button class="btn-secondary btn-small" style="color:var(--danger)" onclick="resetAllData()">Reset</button>
+            <div style="font-size:12px; color:#555;">V6.1 (Safe)</div>
         </div>
         <div id="days-list"></div>
+        <div style="margin-top:40px; text-align:center;">
+            <button class="btn-text" style="color:#333; font-size:12px; background:none;" onclick="exportData()">Backup Data (Copy to Clipboard)</button>
+        </div>
     </div>
 
     <div id="view-day" class="hidden">
@@ -103,8 +85,7 @@
         <div class="card">
             <h3 style="margin:0 0 10px 0; font-size:16px;">Last 4 Sessions</h3>
             <div style="overflow-x:auto;">
-                <table class="history-table" id="stats-table">
-                    </table>
+                <table class="history-table" id="stats-table"></table>
             </div>
         </div>
     </div>
@@ -135,17 +116,49 @@
 <button class="fab" onclick="openEditModal()">+</button>
 
 <script>
-// --- Data State ---
-let exercises = JSON.parse(localStorage.getItem('exercises_v6')) || [];
-let dayOrder = JSON.parse(localStorage.getItem('day_order_v6')) || [];
+// ==========================================
+// DATA MIGRATION & RESTORE SYSTEM
+// ==========================================
+// This ensures we never lose data from V3, V4, V5, or V6
+const MASTER_KEY = 'workout_master_data';
+const MASTER_ORDER_KEY = 'workout_master_order';
+
+function loadAndMigrateData() {
+    let data = JSON.parse(localStorage.getItem(MASTER_KEY));
+    let order = JSON.parse(localStorage.getItem(MASTER_ORDER_KEY));
+
+    // If no master data, look for old versions
+    if (!data) {
+        console.log("No master data found. Searching for backups...");
+        const v6 = JSON.parse(localStorage.getItem('exercises_v6'));
+        const v3 = JSON.parse(localStorage.getItem('exercises_v3'));
+        
+        if (v6) { data = v6; order = JSON.parse(localStorage.getItem('day_order_v6')); }
+        else if (v3) { data = v3; order = JSON.parse(localStorage.getItem('day_order_v3')); }
+        else { data = []; order = []; }
+
+        // Patch IDs if missing
+        if(data) {
+            data.forEach(ex => { 
+                if(!ex.id) ex.id = Date.now() + Math.random().toString(16).slice(2); 
+            });
+            localStorage.setItem(MASTER_KEY, JSON.stringify(data));
+            if(order) localStorage.setItem(MASTER_ORDER_KEY, JSON.stringify(order));
+        }
+    }
+    return { exercises: data || [], dayOrder: order || [] };
+}
+
+// Initialize Data
+let { exercises, dayOrder } = loadAndMigrateData();
 let activeDay = null;
 let editIndex = null;
 let chartInstance = null;
 
-// Ensure IDs
-exercises.forEach(ex => { if(!ex.id) ex.id = Date.now() + Math.random().toString(16).slice(2); });
+// ==========================================
+// APP LOGIC
+// ==========================================
 
-// --- Views ---
 function goHome() {
     activeDay = null;
     document.getElementById('view-home').classList.remove('hidden');
@@ -173,7 +186,7 @@ function renderHome() {
     let distinctDays = [...new Set(exercises.map(e => e.day))];
     dayOrder = dayOrder.filter(d => distinctDays.includes(d));
     distinctDays.forEach(d => { if(!dayOrder.includes(d)) dayOrder.push(d); });
-    localStorage.setItem('day_order_v6', JSON.stringify(dayOrder));
+    localStorage.setItem(MASTER_ORDER_KEY, JSON.stringify(dayOrder));
 
     document.getElementById('day-list-suggestions').innerHTML = dayOrder.map(d => `<option value="${d}">`).join('');
 
@@ -201,9 +214,9 @@ function renderExercises() {
     
     exercises.forEach((ex, idx) => {
         if(ex.day !== activeDay) return;
-        
         let subtext = `${ex.sets || 3} Sets • ${ex.min}-${ex.max} Reps`;
         if(ex.type === 'giant') subtext = "Giant Set Progression";
+        if(ex.targetRPE) subtext += ` @ RPE ${ex.targetRPE}`;
 
         list.innerHTML += `
             <div class="card">
@@ -228,19 +241,18 @@ function renderExercises() {
     });
 }
 
-// --- Analytics Logic ---
+// --- Analytics ---
 function openStats(idx) {
     const ex = exercises[idx];
     document.getElementById('view-day').classList.add('hidden');
     document.getElementById('view-stats').classList.remove('hidden');
     document.getElementById('stats-title').innerText = ex.name;
 
-    // Table Data
     const table = document.getElementById('stats-table');
-    table.innerHTML = `<thead><tr><th>Date</th><th>Sets (Wt x Reps)</th><th>Best</th></tr></thead><tbody></tbody>`;
+    table.innerHTML = `<thead><tr><th>Date</th><th>Sets</th><th>Best</th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector('tbody');
     
-    const recentHistory = ex.history.slice(-4).reverse(); // Last 4
+    const recentHistory = ex.history ? ex.history.slice(-4).reverse() : [];
     const dates = [];
     const maxWeights = [];
     const maxReps = [];
@@ -248,7 +260,6 @@ function openStats(idx) {
     recentHistory.forEach(h => {
         const d = new Date(h.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
         dates.push(d);
-        
         let bestStr = "-";
         let setStr = "";
         let bestW = 0;
@@ -256,23 +267,20 @@ function openStats(idx) {
 
         if(ex.type === 'normal' && h.sets) {
             h.sets.forEach(s => {
-                setStr += `${s.weight}x${s.reps} <br>`;
+                setStr += `${s.weight}x${s.reps}<br>`;
                 if(parseFloat(s.weight) > bestW) { bestW = s.weight; bestR = s.reps; }
             });
-            bestStr = `${bestW}kg x ${bestR}`;
+            bestStr = `${bestW}kg`;
         } else if (ex.type === 'giant') {
-            bestStr = `${h.weight}kg x ${h.totalReps}`;
-            setStr = "Giant Set";
+            bestStr = `${h.weight}kg`;
+            setStr = `Total: ${h.totalReps}`;
             bestW = h.weight; bestR = h.totalReps;
         }
-
         maxWeights.push(bestW);
         maxReps.push(bestR);
-
         tbody.innerHTML += `<tr><td>${d}</td><td>${setStr}</td><td>${bestStr}</td></tr>`;
     });
 
-    // Chart
     if(chartInstance) chartInstance.destroy();
     const ctx = document.getElementById('progressChart').getContext('2d');
     chartInstance = new Chart(ctx, {
@@ -295,11 +303,9 @@ function openStats(idx) {
     });
 }
 
-// --- Smart Target Logic ---
+// --- Smart Targets ---
 function getSmartTarget(ex, setIndex) {
-    // Only for normal sets for now
     if(!ex.history || ex.history.length === 0) return { weight: '', reps: ex.min, type: 'start' };
-    
     const lastSession = ex.history[ex.history.length - 1];
     if(!lastSession.sets || !lastSession.sets[setIndex]) return { weight: '', reps: ex.min, type: 'new' };
 
@@ -308,35 +314,21 @@ function getSmartTarget(ex, setIndex) {
     const prevR = parseInt(prevSet.reps);
     const prevRPE = prevSet.rpe ? parseFloat(prevSet.rpe) : 0;
     
-    // Configs
     const maxReps = parseInt(ex.max);
     const minReps = parseInt(ex.min);
     const inc = parseFloat(ex.inc);
     
-    // Parse RPE Range (e.g. "7-9" -> max 9)
     let maxRPEAllowed = 10;
     if(ex.targetRPE) {
         const parts = ex.targetRPE.match(/(\d+)/g);
         if(parts && parts.length > 0) maxRPEAllowed = parseFloat(parts[parts.length-1]);
     }
 
-    // Logic 1: Regression (Failed Min Reps)
-    if (prevR < minReps) {
-        return { weight: prevW - inc, reps: minReps, type: 'regress', msg: 'Regress' };
-    }
-
-    // Logic 2: Progression (Hit Max Reps + RPE OK)
-    // Only progress if RPE was not higher than max allowed (or if no RPE logged)
+    if (prevR < minReps) return { weight: prevW - inc, reps: minReps, type: 'regress', msg: 'Regress' };
     if (prevR >= maxReps) {
-        if(prevRPE <= maxRPEAllowed) {
-            return { weight: prevW + inc, reps: minReps, type: 'progress', msg: 'Go Up' };
-        } else {
-            // Reps hit, but RPE too high to increase weight
-            return { weight: prevW, reps: maxReps, type: 'hold', msg: 'RPE High' };
-        }
+        if(prevRPE <= maxRPEAllowed) return { weight: prevW + inc, reps: minReps, type: 'progress', msg: 'Go Up' };
+        else return { weight: prevW, reps: maxReps, type: 'hold', msg: 'RPE High' };
     }
-
-    // Logic 3: Stay in range (Add 1 Rep)
     return { weight: prevW, reps: prevR + 1, type: 'hold', msg: '+1 Rep' };
 }
 
@@ -352,13 +344,9 @@ function openLogModal(idx) {
     container.innerHTML = '';
 
     if(ex.type === 'normal') {
-        // Pre-fill based on smart targets
         const numSets = ex.sets || 3;
-        for(let i=0; i<numSets; i++) {
-            addSetInputRow(i);
-        }
+        for(let i=0; i<numSets; i++) addSetInputRow(i);
     } else {
-        // Giant/Superset (Simplified for V6 to focus on normal logic)
         addSetInputRow();
     }
 }
@@ -369,8 +357,6 @@ function addSetInputRow(setIndex = null, isManual = false) {
     
     if(ex.type === 'normal') {
         const effectiveIndex = setIndex !== null ? setIndex : document.querySelectorAll('.set-row').length;
-        
-        // Get Stats
         let prevText = "New Set";
         let suggestion = { weight: '', reps: '' };
         let badge = '';
@@ -381,7 +367,6 @@ function addSetInputRow(setIndex = null, isManual = false) {
                 const p = last.sets[effectiveIndex];
                 prevText = `Last: ${p.weight}kg x ${p.reps} @ ${p.rpe || '-'} RPE`;
                 suggestion = getSmartTarget(ex, effectiveIndex);
-                
                 if(suggestion.type === 'progress') badge = `<span class="target-pill">⬆ Inc Wt</span>`;
                 if(suggestion.type === 'regress') badge = `<span class="target-pill regress">⬇ Deload</span>`;
                 if(suggestion.type === 'hold') badge = `<span class="target-pill hold">Hold</span>`;
@@ -407,9 +392,8 @@ function addSetInputRow(setIndex = null, isManual = false) {
             </div>
         `;
     } else if (ex.type === 'giant') {
-        div.innerHTML = `<label>Giant Set Totals</label><div class="grid-2"><input type="number" id="log-g-wt" placeholder="Weight"><input type="number" id="log-g-reps" placeholder="Total Reps"></div>`;
+        div.innerHTML = `<label>Giant Set</label><div class="grid-2"><input type="number" id="log-g-wt" placeholder="Weight"><input type="number" id="log-g-reps" placeholder="Total Reps"></div>`;
     } else {
-        // Superset simple
         div.innerHTML = `<div class="set-row"><input class="l-w" placeholder="Wt"><input class="l-r" placeholder="Reps"><button class="del-btn" onclick="this.parentElement.remove()">X</button></div>`;
     }
     document.getElementById('log-inputs').appendChild(div);
@@ -439,26 +423,22 @@ function saveLog() {
     }
     
     ex.history.push(entry);
-    localStorage.setItem('exercises_v6', JSON.stringify(exercises));
+    localStorage.setItem(MASTER_KEY, JSON.stringify(exercises));
     closeModals();
 }
 
-// --- Standard Utils ---
+// --- Config ---
 function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); }
 function openEditModal(idx = null) {
     document.getElementById('modal-edit').classList.remove('hidden');
     editIndex = idx;
     const div = document.getElementById('cfg-dynamic-area');
-    div.innerHTML = '';
-    
-    // Simplified Edit Form for V6 brevity
     div.innerHTML = `
         <input type="text" id="cfg-name" placeholder="Name">
         <div class="grid-2"><input id="cfg-sets" placeholder="Sets"><input id="cfg-inc" placeholder="Increment"></div>
         <div class="grid-2"><input id="cfg-min" placeholder="Min Reps"><input id="cfg-max" placeholder="Max Reps"></div>
         <input id="cfg-rpe" placeholder="Target RPE (e.g. 7-9)">
     `;
-
     if(idx !== null) {
         const ex = exercises[idx];
         document.getElementById('cfg-day').value = ex.day;
@@ -488,7 +468,7 @@ function saveExercise() {
     ex.targetRPE = document.getElementById('cfg-rpe').value;
     
     if(editIndex === null) exercises.push(ex);
-    localStorage.setItem('exercises_v6', JSON.stringify(exercises));
+    localStorage.setItem(MASTER_KEY, JSON.stringify(exercises));
     closeModals();
     if(activeDay) renderExercises(); else renderHome();
 }
@@ -500,21 +480,22 @@ function moveDay(d, dir) {
     }
 }
 function moveExercise(idx, dir) {
-    // Basic reorder logic
     const ex = exercises[idx];
     const subset = exercises.map((e,i) => e.day === ex.day ? i : -1).filter(i => i !== -1);
     const pos = subset.indexOf(idx);
     if(pos + dir >= 0 && pos + dir < subset.length) {
         const swapIdx = subset[pos+dir];
         [exercises[idx], exercises[swapIdx]] = [exercises[swapIdx], exercises[idx]];
-        localStorage.setItem('exercises_v6', JSON.stringify(exercises));
+        localStorage.setItem(MASTER_KEY, JSON.stringify(exercises));
         renderExercises();
     }
 }
 function deleteExercise() {
-    if(confirm("Delete?")) { exercises.splice(editIndex, 1); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); renderExercises(); }
+    if(confirm("Delete?")) { exercises.splice(editIndex, 1); localStorage.setItem(MASTER_KEY, JSON.stringify(exercises)); closeModals(); renderExercises(); }
 }
-function resetAllData() { if(confirm("Reset All?")) { localStorage.clear(); location.reload(); } }
+function exportData() {
+    navigator.clipboard.writeText(localStorage.getItem(MASTER_KEY)).then(() => alert("Data copied to clipboard!"));
+}
 
 renderHome();
 </script>
