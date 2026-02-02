@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Tracker V8 (Backup)</title>
+    <title>Pro Tracker V9 (Menu)</title>
     <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,11 +14,19 @@
         .container { padding: 16px; max-width: 600px; margin: 0 auto; }
         h1 { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
         
+        /* Menu System */
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: relative; }
+        .dropdown-menu { position: absolute; top: 40px; right: 0; background: #252525; border: 1px solid #333; border-radius: 12px; padding: 6px; width: 180px; z-index: 200; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .menu-item { display: block; width: 100%; padding: 12px; text-align: left; background: none; border: none; color: #eee; font-size: 15px; border-radius: 8px; cursor: pointer; }
+        .menu-item:active { background: #3a3a3c; }
+        .menu-item.danger { color: var(--danger); }
+        .menu-overlay { position: fixed; top:0; left:0; width:100%; height:100%; z-index:190; display:none; }
+
         .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; position: relative; border: 1px solid var(--border); }
         .row { display: flex; justify-content: space-between; align-items: center; }
         .row-start { display: flex; justify-content: flex-start; align-items: center; gap: 10px; }
         
-        .btn-icon { background: none; border: none; color: var(--accent); font-size: 18px; padding: 8px; cursor: pointer; }
+        .btn-icon { background: none; border: none; color: var(--accent); font-size: 22px; padding: 4px 8px; cursor: pointer; }
         .btn-move { color: var(--sub); font-size: 14px; padding: 4px 8px; background: #2c2c2e; border-radius: 4px; margin-left: 4px; }
         .ex-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; display: block;}
         .meta-text { font-size: 13px; color: var(--sub); display: block; }
@@ -59,22 +67,22 @@
 
 <div class="container" id="app">
     <div id="view-home">
-        <div class="row" style="margin-bottom:20px">
+        <div class="header-row">
             <h1>My Program</h1>
+            <button class="btn-icon" onclick="toggleMenu()">⋮</button>
+            
+            <div id="home-menu" class="dropdown-menu hidden">
+                <button class="menu-item" onclick="exportData()">💾 Export Backup</button>
+                <button class="menu-item" onclick="triggerImport()">📂 Import Backup</button>
+                <button class="menu-item danger" onclick="resetAllData()">🗑 Reset Data</button>
+            </div>
         </div>
-        <div id="days-list"></div>
         
-        <div style="margin-top:40px; border-top:1px solid #333; padding-top:20px;">
-            <h3 style="font-size:16px; color:#666; margin-bottom:10px;">Data Management</h3>
-            <div class="grid-2">
-                <button class="btn-secondary btn-small" onclick="exportData()">💾 Export Backup</button>
-                <button class="btn-secondary btn-small" onclick="document.getElementById('file-input').click()">📂 Import Backup</button>
-                <input type="file" id="file-input" style="display:none" onchange="importData(this)">
-            </div>
-            <div style="margin-top:10px; text-align:center;">
-                 <button class="btn-secondary btn-small" style="color:var(--danger); background:none;" onclick="resetAllData()">Reset All Data</button>
-            </div>
-        </div>
+        <div id="menu-overlay" class="menu-overlay" onclick="toggleMenu()"></div>
+        
+        <input type="file" id="file-input" style="display:none" onchange="importData(this)">
+
+        <div id="days-list"></div>
     </div>
 
     <div id="view-day" class="hidden">
@@ -141,7 +149,6 @@
 let exercises = JSON.parse(localStorage.getItem('exercises_v6'));
 let dayOrder = JSON.parse(localStorage.getItem('day_order_v6'));
 
-// Migration Check
 if (!exercises || exercises.length === 0) {
     const oldEx = JSON.parse(localStorage.getItem('exercises_v3'));
     exercises = oldEx && oldEx.length > 0 ? oldEx : [];
@@ -158,23 +165,31 @@ let activeDay = null;
 let editIndex = null;
 let chartInstance = null;
 
-// --- BACKUP & RESTORE ---
-function exportData() {
-    const data = {
-        exercises: exercises,
-        dayOrder: dayOrder,
-        version: "8.0",
-        date: new Date().toISOString()
-    };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "workout_backup_" + new Date().toISOString().slice(0,10) + ".json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+// --- MENU & BACKUP ---
+function toggleMenu() {
+    const menu = document.getElementById('home-menu');
+    const overlay = document.getElementById('menu-overlay');
+    if(menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        overlay.style.display = 'block';
+    } else {
+        menu.classList.add('hidden');
+        overlay.style.display = 'none';
+    }
 }
-
+function triggerImport() {
+    toggleMenu();
+    document.getElementById('file-input').click();
+}
+function exportData() {
+    toggleMenu();
+    const data = { exercises: exercises, dayOrder: dayOrder, version: "9.0", date: new Date().toISOString() };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+    const node = document.createElement('a');
+    node.setAttribute("href", dataStr);
+    node.setAttribute("download", "workout_backup_" + new Date().toISOString().slice(0,10) + ".json");
+    document.body.appendChild(node); node.click(); node.remove();
+}
 function importData(input) {
     const file = input.files[0];
     if (!file) return;
@@ -182,20 +197,14 @@ function importData(input) {
     reader.onload = function(e) {
         try {
             const data = JSON.parse(e.target.result);
-            if(data.exercises) {
-                if(confirm(`Found ${data.exercises.length} exercises from backup. Overwrite current data?`)) {
-                    exercises = data.exercises;
-                    dayOrder = data.dayOrder || [];
-                    localStorage.setItem('exercises_v6', JSON.stringify(exercises));
-                    localStorage.setItem('day_order_v6', JSON.stringify(dayOrder));
-                    location.reload();
-                }
-            } else {
-                alert("Invalid backup file.");
+            if(data.exercises && confirm(`Found ${data.exercises.length} exercises. Overwrite?`)) {
+                exercises = data.exercises;
+                dayOrder = data.dayOrder || [];
+                localStorage.setItem('exercises_v6', JSON.stringify(exercises));
+                localStorage.setItem('day_order_v6', JSON.stringify(dayOrder));
+                location.reload();
             }
-        } catch(err) {
-            alert("Error reading file: " + err);
-        }
+        } catch(err) { alert("Error reading file."); }
     };
     reader.readAsText(file);
 }
@@ -274,11 +283,9 @@ function openStats(idx) {
     const ex = exercises[idx];
     toggleViews('stats');
     document.getElementById('stats-title').innerText = ex.name;
-
     const table = document.getElementById('stats-table');
     table.innerHTML = `<thead><tr><th>Date</th><th>Sets</th><th>Best</th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector('tbody');
-    
     const recentHistory = ex.history.slice(-4).reverse();
     const dates = [], maxWeights = [], maxReps = [];
 
@@ -286,12 +293,8 @@ function openStats(idx) {
         const d = new Date(h.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
         dates.push(d);
         let bestStr = "-", setStr = "", bestW = 0, bestR = 0;
-
         if(ex.type === 'normal' && h.sets) {
-            h.sets.forEach(s => {
-                setStr += `${s.weight}x${s.reps}<br>`;
-                if(parseFloat(s.weight) > bestW) { bestW = s.weight; bestR = s.reps; }
-            });
+            h.sets.forEach(s => { setStr += `${s.weight}x${s.reps}<br>`; if(parseFloat(s.weight) > bestW) { bestW = s.weight; bestR = s.reps; } });
             bestStr = `${bestW}kg x ${bestR}`;
         } else if (ex.type === 'superset' && h.setsA) {
              setStr = "Superset"; bestStr = "Mixed"; 
@@ -309,39 +312,24 @@ function openStats(idx) {
         type: 'line',
         data: {
             labels: dates.reverse(),
-            datasets: [
-                { label: 'Strength (Kg)', data: maxWeights.reverse(), borderColor: '#0a84ff', yAxisID: 'y' },
-                { label: 'Vol (Reps)', data: maxReps.reverse(), borderColor: '#30d158', yAxisID: 'y1' }
-            ]
+            datasets: [ { label: 'Strength (Kg)', data: maxWeights.reverse(), borderColor: '#0a84ff', yAxisID: 'y' }, { label: 'Vol (Reps)', data: maxReps.reverse(), borderColor: '#30d158', yAxisID: 'y1' } ]
         },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            scales: { y: { display:true, position:'left', grid:{color:'#333'} }, y1: { display:true, position:'right', grid:{drawOnChartArea:false} } }
-        }
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { display:true, position:'left', grid:{color:'#333'} }, y1: { display:true, position:'right', grid:{drawOnChartArea:false} } } }
     });
 }
 
-// --- Logic, Config, Log (Same as V7) ---
+// --- Logic ---
 function getSmartTarget(ex, setIndex) {
     if(!ex.history || ex.history.length === 0) return { weight: '', reps: ex.min, type: 'start' };
     const lastSession = ex.history[ex.history.length - 1];
     if(!lastSession.sets || !lastSession.sets[setIndex]) return { weight: '', reps: ex.min, type: 'new' };
-
     const prevSet = lastSession.sets[setIndex];
     const prevW = parseFloat(prevSet.weight), prevR = parseInt(prevSet.reps), prevRPE = prevSet.rpe ? parseFloat(prevSet.rpe) : 0;
     const maxReps = parseInt(ex.max), minReps = parseInt(ex.min), inc = parseFloat(ex.inc);
-    
     let maxRPEAllowed = 10;
-    if(ex.targetRPE) {
-        const parts = ex.targetRPE.match(/(\d+)/g);
-        if(parts && parts.length > 0) maxRPEAllowed = parseFloat(parts[parts.length-1]);
-    }
-
+    if(ex.targetRPE) { const parts = ex.targetRPE.match(/(\d+)/g); if(parts && parts.length > 0) maxRPEAllowed = parseFloat(parts[parts.length-1]); }
     if (prevR < minReps) return { weight: prevW - inc, reps: minReps, type: 'regress', msg: 'Regress' };
-    if (prevR >= maxReps) {
-        if(prevRPE <= maxRPEAllowed) return { weight: prevW + inc, reps: minReps, type: 'progress', msg: 'Go Up' };
-        else return { weight: prevW, reps: maxReps, type: 'hold', msg: 'RPE High' };
-    }
+    if (prevR >= maxReps) { if(prevRPE <= maxRPEAllowed) return { weight: prevW + inc, reps: minReps, type: 'progress', msg: 'Go Up' }; else return { weight: prevW, reps: maxReps, type: 'hold', msg: 'RPE High' }; }
     return { weight: prevW, reps: prevR + 1, type: 'hold', msg: '+1 Rep' };
 }
 function getInitials(name) { if(!name) return '?'; return name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase(); }
@@ -349,81 +337,47 @@ function closeModals() { document.querySelectorAll('.modal').forEach(m => m.clas
 
 function renderConfigFields() {
     const type = document.getElementById('cfg-type').value;
-    const div = document.getElementById('cfg-dynamic-area');
-    div.innerHTML = '';
+    const div = document.getElementById('cfg-dynamic-area'); div.innerHTML = '';
     const rpeHTML = `<input id="cfg-rpe" placeholder="Target RPE (e.g. 7-9)">`;
-
-    if(type === 'normal') {
-        div.innerHTML = `<input type="text" id="cfg-name" placeholder="Exercise Name"><div class="grid-2"><input id="cfg-sets" placeholder="Sets"><input id="cfg-inc" placeholder="Increment"></div><div class="grid-2"><input id="cfg-min" placeholder="Min Reps"><input id="cfg-max" placeholder="Max Reps"></div>${rpeHTML}`;
-    } else if (type === 'superset') {
-        div.innerHTML = `<div class="grid-2"><input id="cfg-sets" placeholder="Sets (3)"><input id="cfg-inc" placeholder="Common Inc (e.g. 2.5)"></div>${rpeHTML}<hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:var(--accent)">Exercise 1</label><input id="cfg-name" placeholder="Name"><div class="grid-2"><input id="cfg-min" placeholder="Min"><input id="cfg-max" placeholder="Max"></div><hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:#ff9f0a">Exercise 2</label><input id="cfg-name-b" placeholder="Name"><div class="grid-3"><input id="cfg-min-b" placeholder="Min"><input id="cfg-max-b" placeholder="Max"><input id="cfg-inc-b" placeholder="Inc B (opt)"></div>`;
-    } else if (type === 'giant') {
-        div.innerHTML = `<input type="text" id="cfg-name" placeholder="Exercise Name"><div class="grid-2"><input id="cfg-min" placeholder="Start Reps"><input id="cfg-max" placeholder="End Reps"></div><div class="grid-2"><input id="cfg-inc" placeholder="Wt Inc"><input id="cfg-rep-inc" placeholder="Rep Inc"></div>`;
-    }
+    if(type === 'normal') div.innerHTML = `<input type="text" id="cfg-name" placeholder="Exercise Name"><div class="grid-2"><input id="cfg-sets" placeholder="Sets"><input id="cfg-inc" placeholder="Increment"></div><div class="grid-2"><input id="cfg-min" placeholder="Min Reps"><input id="cfg-max" placeholder="Max Reps"></div>${rpeHTML}`;
+    else if (type === 'superset') div.innerHTML = `<div class="grid-2"><input id="cfg-sets" placeholder="Sets (3)"><input id="cfg-inc" placeholder="Common Inc (e.g. 2.5)"></div>${rpeHTML}<hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:var(--accent)">Exercise 1</label><input id="cfg-name" placeholder="Name"><div class="grid-2"><input id="cfg-min" placeholder="Min"><input id="cfg-max" placeholder="Max"></div><hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:#ff9f0a">Exercise 2</label><input id="cfg-name-b" placeholder="Name"><div class="grid-3"><input id="cfg-min-b" placeholder="Min"><input id="cfg-max-b" placeholder="Max"><input id="cfg-inc-b" placeholder="Inc B (opt)"></div>`;
+    else if (type === 'giant') div.innerHTML = `<input type="text" id="cfg-name" placeholder="Exercise Name"><div class="grid-2"><input id="cfg-min" placeholder="Start Reps"><input id="cfg-max" placeholder="End Reps"></div><div class="grid-2"><input id="cfg-inc" placeholder="Wt Inc"><input id="cfg-rep-inc" placeholder="Rep Inc"></div>`;
 }
+
 function openEditModal(idx = null) {
-    document.getElementById('modal-edit').classList.remove('hidden');
-    editIndex = idx;
-    document.getElementById('cfg-dynamic-area').innerHTML = '';
-    document.getElementById('cfg-type').value = 'normal';
+    document.getElementById('modal-edit').classList.remove('hidden'); editIndex = idx;
+    document.getElementById('cfg-dynamic-area').innerHTML = ''; document.getElementById('cfg-type').value = 'normal';
     if(idx === null) renderConfigFields();
     if(idx !== null) {
-        const ex = exercises[idx];
-        document.getElementById('cfg-day').value = ex.day;
-        document.getElementById('cfg-type').value = ex.type;
-        document.getElementById('btn-delete').classList.remove('hidden');
-        renderConfigFields();
+        const ex = exercises[idx]; document.getElementById('cfg-day').value = ex.day; document.getElementById('cfg-type').value = ex.type; document.getElementById('btn-delete').classList.remove('hidden'); renderConfigFields();
         setTimeout(() => {
             document.getElementById('cfg-name').value = ex.name;
-            if(ex.type === 'normal') {
-                document.getElementById('cfg-sets').value = ex.sets; document.getElementById('cfg-inc').value = ex.inc; document.getElementById('cfg-min').value = ex.min; document.getElementById('cfg-max').value = ex.max; document.getElementById('cfg-rpe').value = ex.targetRPE || '';
-            } else if (ex.type === 'superset') {
-                document.getElementById('cfg-sets').value = ex.sets; document.getElementById('cfg-inc').value = ex.inc; document.getElementById('cfg-min').value = ex.min; document.getElementById('cfg-max').value = ex.max; document.getElementById('cfg-name-b').value = ex.nameB; document.getElementById('cfg-min-b').value = ex.minB; document.getElementById('cfg-max-b').value = ex.maxB; document.getElementById('cfg-inc-b').value = ex.incB || ex.inc; document.getElementById('cfg-rpe').value = ex.targetRPE || '';
-            } else if (ex.type === 'giant') {
-                document.getElementById('cfg-min').value = ex.min; document.getElementById('cfg-max').value = ex.max; document.getElementById('cfg-inc').value = ex.inc; document.getElementById('cfg-rep-inc').value = ex.repInc || 10;
-            }
+            if(ex.type === 'normal') { document.getElementById('cfg-sets').value = ex.sets; document.getElementById('cfg-inc').value = ex.inc; document.getElementById('cfg-min').value = ex.min; document.getElementById('cfg-max').value = ex.max; document.getElementById('cfg-rpe').value = ex.targetRPE || ''; }
+            else if (ex.type === 'superset') { document.getElementById('cfg-sets').value = ex.sets; document.getElementById('cfg-inc').value = ex.inc; document.getElementById('cfg-min').value = ex.min; document.getElementById('cfg-max').value = ex.max; document.getElementById('cfg-name-b').value = ex.nameB; document.getElementById('cfg-min-b').value = ex.minB; document.getElementById('cfg-max-b').value = ex.maxB; document.getElementById('cfg-inc-b').value = ex.incB || ex.inc; document.getElementById('cfg-rpe').value = ex.targetRPE || ''; }
+            else if (ex.type === 'giant') { document.getElementById('cfg-min').value = ex.min; document.getElementById('cfg-max').value = ex.max; document.getElementById('cfg-inc').value = ex.inc; document.getElementById('cfg-rep-inc').value = ex.repInc || 10; }
         }, 50);
-    } else {
-         document.getElementById('cfg-day').value = activeDay || '';
-         document.getElementById('btn-delete').classList.add('hidden');
-    }
+    } else { document.getElementById('cfg-day').value = activeDay || ''; document.getElementById('btn-delete').classList.add('hidden'); }
 }
+
 function saveExercise() {
     const ex = editIndex !== null ? exercises[editIndex] : { id: Date.now(), history: [] };
     ex.day = document.getElementById('cfg-day').value; ex.name = document.getElementById('cfg-name').value; ex.type = document.getElementById('cfg-type').value;
-    if(ex.type === 'normal') {
-        ex.sets = document.getElementById('cfg-sets').value; ex.inc = document.getElementById('cfg-inc').value; ex.min = document.getElementById('cfg-min').value; ex.max = document.getElementById('cfg-max').value; ex.targetRPE = document.getElementById('cfg-rpe').value;
-    } else if (ex.type === 'superset') {
-        ex.sets = document.getElementById('cfg-sets').value; ex.inc = document.getElementById('cfg-inc').value; ex.min = document.getElementById('cfg-min').value; ex.max = document.getElementById('cfg-max').value; ex.targetRPE = document.getElementById('cfg-rpe').value; ex.nameB = document.getElementById('cfg-name-b').value; ex.minB = document.getElementById('cfg-min-b').value; ex.maxB = document.getElementById('cfg-max-b').value; ex.incB = document.getElementById('cfg-inc-b').value;
-    } else if (ex.type === 'giant') {
-        ex.min = document.getElementById('cfg-min').value; ex.max = document.getElementById('cfg-max').value; ex.inc = document.getElementById('cfg-inc').value; ex.repInc = document.getElementById('cfg-rep-inc').value;
-    }
-    if(editIndex === null) exercises.push(ex);
-    localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); if(activeDay) renderExercises(); else renderHome();
+    if(ex.type === 'normal') { ex.sets = document.getElementById('cfg-sets').value; ex.inc = document.getElementById('cfg-inc').value; ex.min = document.getElementById('cfg-min').value; ex.max = document.getElementById('cfg-max').value; ex.targetRPE = document.getElementById('cfg-rpe').value; }
+    else if (ex.type === 'superset') { ex.sets = document.getElementById('cfg-sets').value; ex.inc = document.getElementById('cfg-inc').value; ex.min = document.getElementById('cfg-min').value; ex.max = document.getElementById('cfg-max').value; ex.targetRPE = document.getElementById('cfg-rpe').value; ex.nameB = document.getElementById('cfg-name-b').value; ex.minB = document.getElementById('cfg-min-b').value; ex.maxB = document.getElementById('cfg-max-b').value; ex.incB = document.getElementById('cfg-inc-b').value; }
+    else if (ex.type === 'giant') { ex.min = document.getElementById('cfg-min').value; ex.max = document.getElementById('cfg-max').value; ex.inc = document.getElementById('cfg-inc').value; ex.repInc = document.getElementById('cfg-rep-inc').value; }
+    if(editIndex === null) exercises.push(ex); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); if(activeDay) renderExercises(); else renderHome();
 }
-function moveDay(d, dir) {
-    const idx = dayOrder.indexOf(d);
-    if(idx + dir >= 0 && idx + dir < dayOrder.length) { [dayOrder[idx], dayOrder[idx+dir]] = [dayOrder[idx+dir], dayOrder[idx]]; renderHome(); }
-}
-function moveExercise(idx, dir) {
-    const ex = exercises[idx];
-    const subset = exercises.map((e,i) => e.day === ex.day ? i : -1).filter(i => i !== -1);
-    const pos = subset.indexOf(idx);
-    if(pos + dir >= 0 && pos + dir < subset.length) {
-        const swapIdx = subset[pos+dir];
-        [exercises[idx], exercises[swapIdx]] = [exercises[swapIdx], exercises[idx]];
-        localStorage.setItem('exercises_v6', JSON.stringify(exercises)); renderExercises();
-    }
-}
+function moveDay(d, dir) { const idx = dayOrder.indexOf(d); if(idx + dir >= 0 && idx + dir < dayOrder.length) { [dayOrder[idx], dayOrder[idx+dir]] = [dayOrder[idx+dir], dayOrder[idx]]; renderHome(); } }
+function moveExercise(idx, dir) { const ex = exercises[idx]; const subset = exercises.map((e,i) => e.day === ex.day ? i : -1).filter(i => i !== -1); const pos = subset.indexOf(idx); if(pos + dir >= 0 && pos + dir < subset.length) { const swapIdx = subset[pos+dir]; [exercises[idx], exercises[swapIdx]] = [exercises[swapIdx], exercises[idx]]; localStorage.setItem('exercises_v6', JSON.stringify(exercises)); renderExercises(); } }
 function deleteExercise() { if(confirm("Delete?")) { exercises.splice(editIndex, 1); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); renderExercises(); } }
-function resetAllData() { if(confirm("Reset All?")) { localStorage.clear(); location.reload(); } }
+function resetAllData() { toggleMenu(); if(confirm("Reset All?")) { localStorage.clear(); location.reload(); } }
+
 function openLogModal(idx) {
     editIndex = idx; const ex = exercises[idx];
     document.getElementById('modal-log').classList.remove('hidden'); document.getElementById('log-title').innerText = ex.name; document.getElementById('log-date').valueAsDate = new Date();
     const container = document.getElementById('log-inputs'); container.innerHTML = '';
     const numSets = ex.sets || 3;
-    if(ex.type === 'giant') addSetInputRow();
-    else for(let i=0; i<numSets; i++) addSetInputRow(i);
+    if(ex.type === 'giant') addSetInputRow(); else for(let i=0; i<numSets; i++) addSetInputRow(i);
 }
 function addSetInputRow(setIndex = null, isManual = false) {
     const ex = exercises[editIndex]; const div = document.createElement('div');
