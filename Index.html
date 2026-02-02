@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Tracker Final</title>
+    <title>Pro Tracker V7</title>
     <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,18 +11,27 @@
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --text: #f2f2f7; --accent: #0a84ff; --success: #30d158; --danger: #ff453a; --sub: #8e8e93; --border: #2c2c2e; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
+        
+        /* Layout */
         .container { padding: 16px; max-width: 600px; margin: 0 auto; }
         h1 { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
+        
+        /* Components */
         .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; position: relative; border: 1px solid var(--border); }
         .row { display: flex; justify-content: space-between; align-items: center; }
         .row-start { display: flex; justify-content: flex-start; align-items: center; gap: 10px; }
+        
         .btn-icon { background: none; border: none; color: var(--accent); font-size: 18px; padding: 8px; cursor: pointer; }
         .btn-move { color: var(--sub); font-size: 14px; padding: 4px 8px; background: #2c2c2e; border-radius: 4px; margin-left: 4px; }
+        
+        /* Typography */
         .ex-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; display: block;}
         .meta-text { font-size: 13px; color: var(--sub); display: block; }
         .target-pill { display: inline-block; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; margin-top: 5px; color: #000; background: var(--success); }
         .target-pill.regress { background: var(--danger); color: white; }
         .target-pill.hold { background: #ff9f0a; color: white; }
+
+        /* Forms */
         input, select, textarea { background: #2c2c2e; border: none; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; font-size: 16px; margin-bottom: 12px; font-family: inherit; }
         input[type="date"] { color-scheme: dark; } 
         button { border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; width: 100%; cursor: pointer; margin-top: 8px; }
@@ -31,14 +40,32 @@
         .btn-success { background: var(--success); color: black; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-small { padding: 8px 16px; font-size: 13px; width: auto; margin:0; }
+
+        /* Modals */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 100; overflow-y: auto; padding: 20px; box-sizing: border-box; }
         .hidden { display: none !important; }
+
+        /* Inputs & Tables */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        
+        /* Logging Rows */
         .set-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 12px; align-items: center; }
+        
+        /* Superset Log Block */
+        .super-block { background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 10px; position: relative; border-left: 3px solid var(--accent); }
+        .super-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
+        .super-label { width: 25px; font-weight: bold; font-size: 12px; color: #888; text-align: center; text-transform: uppercase;}
+        .super-del { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); height: 30px; width: 30px; background: #3a3a3c; color: var(--danger); border-radius: 4px; display:flex; align-items:center; justify-content:center; cursor:pointer;}
+        
         .history-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
         .history-table th, .history-table td { border: 1px solid #333; padding: 8px; text-align: center; color: #ddd; }
         .history-table th { background: #222; color: var(--accent); }
+
+        /* Chart Container */
         .chart-container { position: relative; height: 250px; width: 100%; margin-bottom: 20px; }
+
+        /* Floating Button */
         .fab { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 30px; background: var(--accent); color: white; font-size: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(10,132,255,0.4); border: none; z-index: 50; }
     </style>
 </head>
@@ -48,12 +75,9 @@
     <div id="view-home">
         <div class="row" style="margin-bottom:20px">
             <h1>My Program</h1>
-            <div style="font-size:12px; color:#555;">V6.1 (Safe)</div>
+            <button class="btn-secondary btn-small" style="color:var(--danger)" onclick="resetAllData()">Reset</button>
         </div>
         <div id="days-list"></div>
-        <div style="margin-top:40px; text-align:center;">
-            <button class="btn-text" style="color:#333; font-size:12px; background:none;" onclick="exportData()">Backup Data (Copy to Clipboard)</button>
-        </div>
     </div>
 
     <div id="view-day" class="hidden">
@@ -85,7 +109,8 @@
         <div class="card">
             <h3 style="margin:0 0 10px 0; font-size:16px;">Last 4 Sessions</h3>
             <div style="overflow-x:auto;">
-                <table class="history-table" id="stats-table"></table>
+                <table class="history-table" id="stats-table">
+                    </table>
             </div>
         </div>
     </div>
@@ -93,10 +118,15 @@
 
 <div id="modal-edit" class="modal hidden">
     <h2>Setup Exercise</h2>
+    <label class="meta-text">Day (Folder)</label>
     <input type="text" id="cfg-day" placeholder="Day Name (e.g. Push)" list="day-list-suggestions">
     <datalist id="day-list-suggestions"></datalist>
+    
+    <label class="meta-text">Exercise Type</label>
     <select id="cfg-type" onchange="renderConfigFields()"><option value="normal">Normal</option><option value="superset">Superset</option><option value="giant">Giant Set</option></select>
+    
     <div id="cfg-dynamic-area" style="margin-top:15px;"></div>
+    
     <button class="btn-success" onclick="saveExercise()">Save</button>
     <button class="btn-secondary" onclick="closeModals()">Cancel</button>
     <button class="btn-danger" id="btn-delete" style="margin-top:20px;" onclick="deleteExercise()">Delete</button>
@@ -116,49 +146,17 @@
 <button class="fab" onclick="openEditModal()">+</button>
 
 <script>
-// ==========================================
-// DATA MIGRATION & RESTORE SYSTEM
-// ==========================================
-// This ensures we never lose data from V3, V4, V5, or V6
-const MASTER_KEY = 'workout_master_data';
-const MASTER_ORDER_KEY = 'workout_master_order';
-
-function loadAndMigrateData() {
-    let data = JSON.parse(localStorage.getItem(MASTER_KEY));
-    let order = JSON.parse(localStorage.getItem(MASTER_ORDER_KEY));
-
-    // If no master data, look for old versions
-    if (!data) {
-        console.log("No master data found. Searching for backups...");
-        const v6 = JSON.parse(localStorage.getItem('exercises_v6'));
-        const v3 = JSON.parse(localStorage.getItem('exercises_v3'));
-        
-        if (v6) { data = v6; order = JSON.parse(localStorage.getItem('day_order_v6')); }
-        else if (v3) { data = v3; order = JSON.parse(localStorage.getItem('day_order_v3')); }
-        else { data = []; order = []; }
-
-        // Patch IDs if missing
-        if(data) {
-            data.forEach(ex => { 
-                if(!ex.id) ex.id = Date.now() + Math.random().toString(16).slice(2); 
-            });
-            localStorage.setItem(MASTER_KEY, JSON.stringify(data));
-            if(order) localStorage.setItem(MASTER_ORDER_KEY, JSON.stringify(order));
-        }
-    }
-    return { exercises: data || [], dayOrder: order || [] };
-}
-
-// Initialize Data
-let { exercises, dayOrder } = loadAndMigrateData();
+// --- Data State ---
+let exercises = JSON.parse(localStorage.getItem('exercises_v6')) || [];
+let dayOrder = JSON.parse(localStorage.getItem('day_order_v6')) || [];
 let activeDay = null;
 let editIndex = null;
 let chartInstance = null;
 
-// ==========================================
-// APP LOGIC
-// ==========================================
+// Ensure IDs
+exercises.forEach(ex => { if(!ex.id) ex.id = Date.now() + Math.random().toString(16).slice(2); });
 
+// --- Views ---
 function goHome() {
     activeDay = null;
     document.getElementById('view-home').classList.remove('hidden');
@@ -186,7 +184,7 @@ function renderHome() {
     let distinctDays = [...new Set(exercises.map(e => e.day))];
     dayOrder = dayOrder.filter(d => distinctDays.includes(d));
     distinctDays.forEach(d => { if(!dayOrder.includes(d)) dayOrder.push(d); });
-    localStorage.setItem(MASTER_ORDER_KEY, JSON.stringify(dayOrder));
+    localStorage.setItem('day_order_v6', JSON.stringify(dayOrder));
 
     document.getElementById('day-list-suggestions').innerHTML = dayOrder.map(d => `<option value="${d}">`).join('');
 
@@ -214,9 +212,9 @@ function renderExercises() {
     
     exercises.forEach((ex, idx) => {
         if(ex.day !== activeDay) return;
+        
         let subtext = `${ex.sets || 3} Sets • ${ex.min}-${ex.max} Reps`;
         if(ex.type === 'giant') subtext = "Giant Set Progression";
-        if(ex.targetRPE) subtext += ` @ RPE ${ex.targetRPE}`;
 
         list.innerHTML += `
             <div class="card">
@@ -241,7 +239,7 @@ function renderExercises() {
     });
 }
 
-// --- Analytics ---
+// --- Analytics Logic ---
 function openStats(idx) {
     const ex = exercises[idx];
     document.getElementById('view-day').classList.add('hidden');
@@ -249,10 +247,10 @@ function openStats(idx) {
     document.getElementById('stats-title').innerText = ex.name;
 
     const table = document.getElementById('stats-table');
-    table.innerHTML = `<thead><tr><th>Date</th><th>Sets</th><th>Best</th></tr></thead><tbody></tbody>`;
+    table.innerHTML = `<thead><tr><th>Date</th><th>Sets (Wt x Reps)</th><th>Best</th></tr></thead><tbody></tbody>`;
     const tbody = table.querySelector('tbody');
     
-    const recentHistory = ex.history ? ex.history.slice(-4).reverse() : [];
+    const recentHistory = ex.history.slice(-4).reverse();
     const dates = [];
     const maxWeights = [];
     const maxReps = [];
@@ -260,6 +258,7 @@ function openStats(idx) {
     recentHistory.forEach(h => {
         const d = new Date(h.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
         dates.push(d);
+        
         let bestStr = "-";
         let setStr = "";
         let bestW = 0;
@@ -267,17 +266,24 @@ function openStats(idx) {
 
         if(ex.type === 'normal' && h.sets) {
             h.sets.forEach(s => {
-                setStr += `${s.weight}x${s.reps}<br>`;
+                setStr += `${s.weight}x${s.reps} <br>`;
                 if(parseFloat(s.weight) > bestW) { bestW = s.weight; bestR = s.reps; }
             });
-            bestStr = `${bestW}kg`;
+            bestStr = `${bestW}kg x ${bestR}`;
+        } else if (ex.type === 'superset' && h.setsA) {
+             setStr = "Superset Log";
+             bestStr = "Mixed"; 
+             // Simplification for charts: Track Exercise A
+             h.setsA.forEach(s => { if(parseFloat(s.weight) > bestW) bestW = s.weight; });
         } else if (ex.type === 'giant') {
-            bestStr = `${h.weight}kg`;
-            setStr = `Total: ${h.totalReps}`;
+            bestStr = `${h.weight}kg x ${h.totalReps}`;
+            setStr = "Giant Set";
             bestW = h.weight; bestR = h.totalReps;
         }
+
         maxWeights.push(bestW);
-        maxReps.push(bestR);
+        maxReps.push(bestR || 0);
+
         tbody.innerHTML += `<tr><td>${d}</td><td>${setStr}</td><td>${bestStr}</td></tr>`;
     });
 
@@ -303,7 +309,7 @@ function openStats(idx) {
     });
 }
 
-// --- Smart Targets ---
+// --- Smart Target Logic ---
 function getSmartTarget(ex, setIndex) {
     if(!ex.history || ex.history.length === 0) return { weight: '', reps: ex.min, type: 'start' };
     const lastSession = ex.history[ex.history.length - 1];
@@ -332,6 +338,13 @@ function getSmartTarget(ex, setIndex) {
     return { weight: prevW, reps: prevR + 1, type: 'hold', msg: '+1 Rep' };
 }
 
+// --- Helper for Initials ---
+function getInitials(name) {
+    if(!name) return '?';
+    // Take first letter of each word (up to 2)
+    return name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+}
+
 // --- Logging ---
 function openLogModal(idx) {
     editIndex = idx;
@@ -346,6 +359,9 @@ function openLogModal(idx) {
     if(ex.type === 'normal') {
         const numSets = ex.sets || 3;
         for(let i=0; i<numSets; i++) addSetInputRow(i);
+    } else if (ex.type === 'superset') {
+        const numSets = ex.sets || 3;
+        for(let i=0; i<numSets; i++) addSetInputRow(i);
     } else {
         addSetInputRow();
     }
@@ -354,9 +370,9 @@ function openLogModal(idx) {
 function addSetInputRow(setIndex = null, isManual = false) {
     const ex = exercises[editIndex];
     const div = document.createElement('div');
-    
+    const effectiveIndex = setIndex !== null ? setIndex : document.querySelectorAll('.set-row, .super-block').length;
+
     if(ex.type === 'normal') {
-        const effectiveIndex = setIndex !== null ? setIndex : document.querySelectorAll('.set-row').length;
         let prevText = "New Set";
         let suggestion = { weight: '', reps: '' };
         let badge = '';
@@ -367,6 +383,7 @@ function addSetInputRow(setIndex = null, isManual = false) {
                 const p = last.sets[effectiveIndex];
                 prevText = `Last: ${p.weight}kg x ${p.reps} @ ${p.rpe || '-'} RPE`;
                 suggestion = getSmartTarget(ex, effectiveIndex);
+                
                 if(suggestion.type === 'progress') badge = `<span class="target-pill">⬆ Inc Wt</span>`;
                 if(suggestion.type === 'regress') badge = `<span class="target-pill regress">⬇ Deload</span>`;
                 if(suggestion.type === 'hold') badge = `<span class="target-pill hold">Hold</span>`;
@@ -391,10 +408,30 @@ function addSetInputRow(setIndex = null, isManual = false) {
                 </div>
             </div>
         `;
+    } else if (ex.type === 'superset') {
+        // Initials Logic
+        const initA = getInitials(ex.name);
+        const initB = getInitials(ex.nameB);
+
+        div.className = 'super-block';
+        div.innerHTML = `
+            <div style="font-size:12px; color:#666; margin-bottom:5px; text-align:right">SET ${effectiveIndex+1}</div>
+            <div class="super-row">
+                <div class="super-label">${initA}</div>
+                <input type="number" class="l-w-a" placeholder="Kg">
+                <input type="number" class="l-r-a" placeholder="Reps">
+                <input type="number" class="l-rpe-a" placeholder="RPE">
+            </div>
+            <div class="super-row">
+                <div class="super-label">${initB}</div>
+                <input type="number" class="l-w-b" placeholder="Kg">
+                <input type="number" class="l-r-b" placeholder="Reps">
+                <input type="number" class="l-rpe-b" placeholder="RPE">
+            </div>
+            ${isManual ? '<div class="super-del" onclick="this.parentElement.remove()">X</div>' : ''}
+        `;
     } else if (ex.type === 'giant') {
-        div.innerHTML = `<label>Giant Set</label><div class="grid-2"><input type="number" id="log-g-wt" placeholder="Weight"><input type="number" id="log-g-reps" placeholder="Total Reps"></div>`;
-    } else {
-        div.innerHTML = `<div class="set-row"><input class="l-w" placeholder="Wt"><input class="l-r" placeholder="Reps"><button class="del-btn" onclick="this.parentElement.remove()">X</button></div>`;
+        div.innerHTML = `<label>Giant Set Totals</label><div class="grid-2"><input type="number" id="log-g-wt" placeholder="Weight"><input type="number" id="log-g-reps" placeholder="Total Reps"></div>`;
     }
     document.getElementById('log-inputs').appendChild(div);
 }
@@ -406,6 +443,14 @@ function saveLog() {
     if(ex.type === 'giant') {
         entry.weight = document.getElementById('log-g-wt').value;
         entry.totalReps = document.getElementById('log-g-reps').value;
+    } else if (ex.type === 'superset') {
+        const blocks = document.querySelectorAll('.super-block');
+        const sA = [], sB = [];
+        blocks.forEach(b => {
+            sA.push({ weight: b.querySelector('.l-w-a').value, reps: b.querySelector('.l-r-a').value, rpe: b.querySelector('.l-rpe-a').value });
+            sB.push({ weight: b.querySelector('.l-w-b').value, reps: b.querySelector('.l-r-b').value, rpe: b.querySelector('.l-rpe-b').value });
+        });
+        entry.setsA = sA; entry.setsB = sB;
     } else {
         const rows = document.querySelectorAll('.l-w');
         const sets = [];
@@ -423,33 +468,91 @@ function saveLog() {
     }
     
     ex.history.push(entry);
-    localStorage.setItem(MASTER_KEY, JSON.stringify(exercises));
+    localStorage.setItem('exercises_v6', JSON.stringify(exercises));
     closeModals();
 }
 
-// --- Config ---
+// --- Config Utils ---
 function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); }
+
+function renderConfigFields() {
+    const type = document.getElementById('cfg-type').value;
+    const div = document.getElementById('cfg-dynamic-area');
+    div.innerHTML = '';
+
+    // Common RPE
+    const rpeHTML = `<input id="cfg-rpe" placeholder="Target RPE (e.g. 7-9)">`;
+
+    if(type === 'normal') {
+        div.innerHTML = `
+            <input type="text" id="cfg-name" placeholder="Exercise Name">
+            <div class="grid-2"><input id="cfg-sets" placeholder="Sets"><input id="cfg-inc" placeholder="Increment"></div>
+            <div class="grid-2"><input id="cfg-min" placeholder="Min Reps"><input id="cfg-max" placeholder="Max Reps"></div>
+            ${rpeHTML}
+        `;
+    } else if (type === 'superset') {
+        div.innerHTML = `
+            <div class="grid-2"><input id="cfg-sets" placeholder="Sets (3)"><input id="cfg-inc" placeholder="Common Inc (e.g. 2.5)"></div>
+            ${rpeHTML}
+            <hr style="border:1px solid #333; margin:10px 0;">
+            <label class="meta-text" style="color:var(--accent)">Exercise 1</label>
+            <input id="cfg-name" placeholder="Name">
+            <div class="grid-2"><input id="cfg-min" placeholder="Min"><input id="cfg-max" placeholder="Max"></div>
+            
+            <hr style="border:1px solid #333; margin:10px 0;">
+            <label class="meta-text" style="color:#ff9f0a">Exercise 2</label>
+            <input id="cfg-name-b" placeholder="Name">
+            <div class="grid-3"><input id="cfg-min-b" placeholder="Min"><input id="cfg-max-b" placeholder="Max"><input id="cfg-inc-b" placeholder="Inc B (opt)"></div>
+        `;
+    } else if (type === 'giant') {
+        div.innerHTML = `
+             <input type="text" id="cfg-name" placeholder="Exercise Name">
+             <div class="grid-2"><input id="cfg-min" placeholder="Start Reps"><input id="cfg-max" placeholder="End Reps"></div>
+             <div class="grid-2"><input id="cfg-inc" placeholder="Wt Inc"><input id="cfg-rep-inc" placeholder="Rep Inc"></div>
+        `;
+    }
+}
+
 function openEditModal(idx = null) {
     document.getElementById('modal-edit').classList.remove('hidden');
     editIndex = idx;
-    const div = document.getElementById('cfg-dynamic-area');
-    div.innerHTML = `
-        <input type="text" id="cfg-name" placeholder="Name">
-        <div class="grid-2"><input id="cfg-sets" placeholder="Sets"><input id="cfg-inc" placeholder="Increment"></div>
-        <div class="grid-2"><input id="cfg-min" placeholder="Min Reps"><input id="cfg-max" placeholder="Max Reps"></div>
-        <input id="cfg-rpe" placeholder="Target RPE (e.g. 7-9)">
-    `;
+    document.getElementById('cfg-dynamic-area').innerHTML = '';
+    document.getElementById('cfg-type').value = 'normal';
+    
+    // Trigger render first
+    if(idx === null) renderConfigFields();
+
     if(idx !== null) {
         const ex = exercises[idx];
         document.getElementById('cfg-day').value = ex.day;
+        document.getElementById('cfg-type').value = ex.type;
         document.getElementById('btn-delete').classList.remove('hidden');
+        renderConfigFields(); // Render specific fields
+        
         setTimeout(() => {
             document.getElementById('cfg-name').value = ex.name;
-            document.getElementById('cfg-sets').value = ex.sets;
-            document.getElementById('cfg-inc').value = ex.inc;
-            document.getElementById('cfg-min').value = ex.min;
-            document.getElementById('cfg-max').value = ex.max;
-            document.getElementById('cfg-rpe').value = ex.targetRPE || '';
+            if(ex.type === 'normal') {
+                document.getElementById('cfg-sets').value = ex.sets;
+                document.getElementById('cfg-inc').value = ex.inc;
+                document.getElementById('cfg-min').value = ex.min;
+                document.getElementById('cfg-max').value = ex.max;
+                document.getElementById('cfg-rpe').value = ex.targetRPE || '';
+            } else if (ex.type === 'superset') {
+                document.getElementById('cfg-sets').value = ex.sets;
+                document.getElementById('cfg-inc').value = ex.inc;
+                document.getElementById('cfg-min').value = ex.min;
+                document.getElementById('cfg-max').value = ex.max;
+                document.getElementById('cfg-name-b').value = ex.nameB;
+                document.getElementById('cfg-min-b').value = ex.minB;
+                document.getElementById('cfg-max-b').value = ex.maxB;
+                document.getElementById('cfg-inc-b').value = ex.incB || ex.inc;
+                document.getElementById('cfg-rpe').value = ex.targetRPE || '';
+            } else if (ex.type === 'giant') {
+                document.getElementById('cfg-min').value = ex.min;
+                document.getElementById('cfg-max').value = ex.max;
+                document.getElementById('cfg-inc').value = ex.inc;
+                document.getElementById('cfg-rep-inc').value = ex.repInc || 10;
+            }
         }, 50);
     } else {
          document.getElementById('cfg-day').value = activeDay || '';
@@ -461,14 +564,32 @@ function saveExercise() {
     ex.day = document.getElementById('cfg-day').value;
     ex.name = document.getElementById('cfg-name').value;
     ex.type = document.getElementById('cfg-type').value;
-    ex.sets = document.getElementById('cfg-sets').value;
-    ex.inc = document.getElementById('cfg-inc').value;
-    ex.min = document.getElementById('cfg-min').value;
-    ex.max = document.getElementById('cfg-max').value;
-    ex.targetRPE = document.getElementById('cfg-rpe').value;
+
+    if(ex.type === 'normal') {
+        ex.sets = document.getElementById('cfg-sets').value;
+        ex.inc = document.getElementById('cfg-inc').value;
+        ex.min = document.getElementById('cfg-min').value;
+        ex.max = document.getElementById('cfg-max').value;
+        ex.targetRPE = document.getElementById('cfg-rpe').value;
+    } else if (ex.type === 'superset') {
+        ex.sets = document.getElementById('cfg-sets').value;
+        ex.inc = document.getElementById('cfg-inc').value;
+        ex.min = document.getElementById('cfg-min').value;
+        ex.max = document.getElementById('cfg-max').value;
+        ex.targetRPE = document.getElementById('cfg-rpe').value;
+        ex.nameB = document.getElementById('cfg-name-b').value;
+        ex.minB = document.getElementById('cfg-min-b').value;
+        ex.maxB = document.getElementById('cfg-max-b').value;
+        ex.incB = document.getElementById('cfg-inc-b').value;
+    } else if (ex.type === 'giant') {
+        ex.min = document.getElementById('cfg-min').value;
+        ex.max = document.getElementById('cfg-max').value;
+        ex.inc = document.getElementById('cfg-inc').value;
+        ex.repInc = document.getElementById('cfg-rep-inc').value;
+    }
     
     if(editIndex === null) exercises.push(ex);
-    localStorage.setItem(MASTER_KEY, JSON.stringify(exercises));
+    localStorage.setItem('exercises_v6', JSON.stringify(exercises));
     closeModals();
     if(activeDay) renderExercises(); else renderHome();
 }
@@ -486,16 +607,14 @@ function moveExercise(idx, dir) {
     if(pos + dir >= 0 && pos + dir < subset.length) {
         const swapIdx = subset[pos+dir];
         [exercises[idx], exercises[swapIdx]] = [exercises[swapIdx], exercises[idx]];
-        localStorage.setItem(MASTER_KEY, JSON.stringify(exercises));
+        localStorage.setItem('exercises_v6', JSON.stringify(exercises));
         renderExercises();
     }
 }
 function deleteExercise() {
-    if(confirm("Delete?")) { exercises.splice(editIndex, 1); localStorage.setItem(MASTER_KEY, JSON.stringify(exercises)); closeModals(); renderExercises(); }
+    if(confirm("Delete?")) { exercises.splice(editIndex, 1); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); renderExercises(); }
 }
-function exportData() {
-    navigator.clipboard.writeText(localStorage.getItem(MASTER_KEY)).then(() => alert("Data copied to clipboard!"));
-}
+function resetAllData() { if(confirm("Reset All?")) { localStorage.clear(); location.reload(); } }
 
 renderHome();
 </script>
