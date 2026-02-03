@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Tracker V9 (Menu)</title>
+    <title>Pro Tracker V10 (Superset Fix)</title>
     <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -30,7 +30,8 @@
         .btn-move { color: var(--sub); font-size: 14px; padding: 4px 8px; background: #2c2c2e; border-radius: 4px; margin-left: 4px; }
         .ex-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; display: block;}
         .meta-text { font-size: 13px; color: var(--sub); display: block; }
-        .target-pill { display: inline-block; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; margin-top: 5px; color: #000; background: var(--success); }
+        .target-text { font-size: 14px; color: var(--success); font-weight: 600; margin-top: 6px; display: block; }
+        .target-pill { display: inline-block; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-top: 2px; color: #000; background: var(--success); }
         .target-pill.regress { background: var(--danger); color: white; }
         .target-pill.hold { background: #ff9f0a; color: white; }
 
@@ -70,18 +71,14 @@
         <div class="header-row">
             <h1>My Program</h1>
             <button class="btn-icon" onclick="toggleMenu()">⋮</button>
-            
             <div id="home-menu" class="dropdown-menu hidden">
                 <button class="menu-item" onclick="exportData()">💾 Export Backup</button>
                 <button class="menu-item" onclick="triggerImport()">📂 Import Backup</button>
                 <button class="menu-item danger" onclick="resetAllData()">🗑 Reset Data</button>
             </div>
         </div>
-        
         <div id="menu-overlay" class="menu-overlay" onclick="toggleMenu()"></div>
-        
         <input type="file" id="file-input" style="display:none" onchange="importData(this)">
-
         <div id="days-list"></div>
     </div>
 
@@ -120,11 +117,9 @@
 
 <div id="modal-edit" class="modal hidden">
     <h2>Setup Exercise</h2>
-    <label class="meta-text">Day (Folder)</label>
-    <input type="text" id="cfg-day" placeholder="Day Name (e.g. Push)" list="day-list-suggestions">
+    <label class="meta-text">Day</label><input type="text" id="cfg-day" list="day-list-suggestions">
     <datalist id="day-list-suggestions"></datalist>
-    <label class="meta-text">Exercise Type</label>
-    <select id="cfg-type" onchange="renderConfigFields()"><option value="normal">Normal</option><option value="superset">Superset</option><option value="giant">Giant Set</option></select>
+    <label class="meta-text">Type</label><select id="cfg-type" onchange="renderConfigFields()"><option value="normal">Normal</option><option value="superset">Superset</option><option value="giant">Giant Set</option></select>
     <div id="cfg-dynamic-area" style="margin-top:15px;"></div>
     <button class="btn-success" onclick="saveExercise()">Save</button>
     <button class="btn-secondary" onclick="closeModals()">Cancel</button>
@@ -145,115 +140,65 @@
 <button class="fab" onclick="openEditModal()">+</button>
 
 <script>
-// --- CORE DATA ---
+// --- DATA ---
 let exercises = JSON.parse(localStorage.getItem('exercises_v6'));
 let dayOrder = JSON.parse(localStorage.getItem('day_order_v6'));
-
-if (!exercises || exercises.length === 0) {
-    const oldEx = JSON.parse(localStorage.getItem('exercises_v3'));
-    exercises = oldEx && oldEx.length > 0 ? oldEx : [];
-    localStorage.setItem('exercises_v6', JSON.stringify(exercises));
-}
-if (!dayOrder || dayOrder.length === 0) {
-    const oldOrder = JSON.parse(localStorage.getItem('day_order_v3'));
-    dayOrder = oldOrder && oldOrder.length > 0 ? oldOrder : [];
-    localStorage.setItem('day_order_v6', JSON.stringify(dayOrder));
-}
-
+if (!exercises) { exercises = JSON.parse(localStorage.getItem('exercises_v3')) || []; localStorage.setItem('exercises_v6', JSON.stringify(exercises)); }
+if (!dayOrder) { dayOrder = JSON.parse(localStorage.getItem('day_order_v3')) || []; localStorage.setItem('day_order_v6', JSON.stringify(dayOrder)); }
 exercises.forEach(ex => { if(!ex.id) ex.id = Date.now() + Math.random().toString(16).slice(2); });
-let activeDay = null;
-let editIndex = null;
-let chartInstance = null;
+
+let activeDay = null, editIndex = null, chartInstance = null;
 
 // --- MENU & BACKUP ---
-function toggleMenu() {
-    const menu = document.getElementById('home-menu');
-    const overlay = document.getElementById('menu-overlay');
-    if(menu.classList.contains('hidden')) {
-        menu.classList.remove('hidden');
-        overlay.style.display = 'block';
-    } else {
-        menu.classList.add('hidden');
-        overlay.style.display = 'none';
-    }
-}
-function triggerImport() {
-    toggleMenu();
-    document.getElementById('file-input').click();
-}
+function toggleMenu() { document.getElementById('home-menu').classList.toggle('hidden'); document.getElementById('menu-overlay').style.display = document.getElementById('home-menu').classList.contains('hidden') ? 'none' : 'block'; }
+function triggerImport() { toggleMenu(); document.getElementById('file-input').click(); }
 function exportData() {
-    toggleMenu();
-    const data = { exercises: exercises, dayOrder: dayOrder, version: "9.0", date: new Date().toISOString() };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-    const node = document.createElement('a');
-    node.setAttribute("href", dataStr);
-    node.setAttribute("download", "workout_backup_" + new Date().toISOString().slice(0,10) + ".json");
-    document.body.appendChild(node); node.click(); node.remove();
+    toggleMenu(); const data = { exercises, dayOrder, version: "10.0", date: new Date().toISOString() };
+    const node = document.createElement('a'); node.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+    node.download = "workout_backup_" + new Date().toISOString().slice(0,10) + ".json"; document.body.appendChild(node); node.click(); node.remove();
 }
 function importData(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            if(data.exercises && confirm(`Found ${data.exercises.length} exercises. Overwrite?`)) {
-                exercises = data.exercises;
-                dayOrder = data.dayOrder || [];
-                localStorage.setItem('exercises_v6', JSON.stringify(exercises));
-                localStorage.setItem('day_order_v6', JSON.stringify(dayOrder));
-                location.reload();
-            }
-        } catch(err) { alert("Error reading file."); }
-    };
-    reader.readAsText(file);
+    const file = input.files[0]; if (!file) return;
+    const reader = new FileReader(); reader.onload = e => { try { const data = JSON.parse(e.target.result); if(data.exercises && confirm("Overwrite data?")) { exercises = data.exercises; dayOrder = data.dayOrder || []; localStorage.setItem('exercises_v6', JSON.stringify(exercises)); location.reload(); } } catch(err) { alert("Error."); } }; reader.readAsText(file);
 }
 
-// --- Views ---
+// --- VIEWS ---
 function goHome() { activeDay = null; toggleViews('home'); renderHome(); }
 function openDay(day) { activeDay = day; toggleViews('day'); document.getElementById('day-title').innerText = day; renderExercises(); }
 function closeStats() { toggleViews(activeDay ? 'day' : 'home'); }
-function toggleViews(view) {
-    ['view-home', 'view-day', 'view-stats'].forEach(v => document.getElementById(v).classList.add('hidden'));
-    document.getElementById('view-' + view).classList.remove('hidden');
-}
+function toggleViews(v) { ['view-home','view-day','view-stats'].forEach(id => document.getElementById(id).classList.add('hidden')); document.getElementById('view-'+v).classList.remove('hidden'); }
 
-// --- Rendering ---
+// --- RENDER ---
 function renderHome() {
-    const list = document.getElementById('days-list');
-    list.innerHTML = '';
-    let distinctDays = [...new Set(exercises.map(e => e.day))];
-    dayOrder = dayOrder.filter(d => distinctDays.includes(d));
-    distinctDays.forEach(d => { if(!dayOrder.includes(d)) dayOrder.push(d); });
+    const list = document.getElementById('days-list'); list.innerHTML = '';
+    let distinct = [...new Set(exercises.map(e => e.day))];
+    dayOrder = dayOrder.filter(d => distinct.includes(d)); distinct.forEach(d => { if(!dayOrder.includes(d)) dayOrder.push(d); });
     localStorage.setItem('day_order_v6', JSON.stringify(dayOrder));
     document.getElementById('day-list-suggestions').innerHTML = dayOrder.map(d => `<option value="${d}">`).join('');
-
-    dayOrder.forEach((day) => {
+    dayOrder.forEach(day => {
         const count = exercises.filter(e => e.day === day).length;
-        list.innerHTML += `
-            <div class="card">
-                <div class="row">
-                    <div onclick="openDay('${day}')" style="flex:1; cursor:pointer;">
-                        <span class="ex-title">${day}</span>
-                        <span class="meta-text">${count} Exercises</span>
-                    </div>
-                    <div>
-                        <button class="btn-move" onclick="moveDay('${day}', -1)">▲</button>
-                        <button class="btn-move" onclick="moveDay('${day}', 1)">▼</button>
-                    </div>
-                </div>
-            </div>`;
+        list.innerHTML += `<div class="card"><div class="row"><div onclick="openDay('${day}')" style="flex:1; cursor:pointer;"><span class="ex-title">${day}</span><span class="meta-text">${count} Exercises</span></div><div><button class="btn-move" onclick="moveDay('${day}', -1)">▲</button><button class="btn-move" onclick="moveDay('${day}', 1)">▼</button></div></div></div>`;
     });
 }
 
 function renderExercises() {
-    const list = document.getElementById('exercises-list');
-    list.innerHTML = '';
-    
+    const list = document.getElementById('exercises-list'); list.innerHTML = '';
     exercises.forEach((ex, idx) => {
         if(ex.day !== activeDay) return;
-        let subtext = `${ex.sets || 3} Sets • ${ex.min}-${ex.max} Reps`;
-        if(ex.type === 'giant') subtext = "Giant Set Progression";
+        let subtext = `${ex.sets || 3} Sets`;
+        let targetDisplay = "";
+
+        // Calculate visual target for card
+        if (ex.type === 'normal') {
+            const t = getSmartTarget(ex, 0); // Check Set 1
+            if(t.weight) targetDisplay = `<span class="target-text">Target: ${t.weight}kg x ${t.reps}</span>`;
+        } else if (ex.type === 'superset') {
+            const tA = getSmartTarget(ex, 0, 'A');
+            const tB = getSmartTarget(ex, 0, 'B');
+            if(tA.weight || tB.weight) targetDisplay = `<span class="target-text" style="font-size:13px;">A: ${tA.weight||'?'}kg x ${tA.reps} | B: ${tB.weight||'?'}kg x ${tB.reps}</span>`;
+        } else if (ex.type === 'giant') {
+            subtext = "Giant Set";
+        }
 
         list.innerHTML += `
             <div class="card">
@@ -262,6 +207,7 @@ function renderExercises() {
                         <span class="meta-text" style="text-transform:uppercase; color:var(--accent); font-weight:bold; font-size:10px;">${ex.type}</span>
                         <span class="ex-title">${ex.name} ${ex.nameB ? `+ ${ex.nameB}` : ''}</span>
                         <span class="meta-text">${subtext}</span>
+                        ${targetDisplay}
                     </div>
                     <div style="display:flex; flex-direction:column; gap:4px; margin-left:10px;">
                         <button class="btn-move" onclick="moveExercise(${idx}, -1)">▲</button>
@@ -278,132 +224,97 @@ function renderExercises() {
     });
 }
 
-// --- Analytics ---
-function openStats(idx) {
-    const ex = exercises[idx];
-    toggleViews('stats');
-    document.getElementById('stats-title').innerText = ex.name;
-    const table = document.getElementById('stats-table');
-    table.innerHTML = `<thead><tr><th>Date</th><th>Sets</th><th>Best</th></tr></thead><tbody></tbody>`;
-    const tbody = table.querySelector('tbody');
-    const recentHistory = ex.history.slice(-4).reverse();
-    const dates = [], maxWeights = [], maxReps = [];
-
-    recentHistory.forEach(h => {
-        const d = new Date(h.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
-        dates.push(d);
-        let bestStr = "-", setStr = "", bestW = 0, bestR = 0;
-        if(ex.type === 'normal' && h.sets) {
-            h.sets.forEach(s => { setStr += `${s.weight}x${s.reps}<br>`; if(parseFloat(s.weight) > bestW) { bestW = s.weight; bestR = s.reps; } });
-            bestStr = `${bestW}kg x ${bestR}`;
-        } else if (ex.type === 'superset' && h.setsA) {
-             setStr = "Superset"; bestStr = "Mixed"; 
-             h.setsA.forEach(s => { if(parseFloat(s.weight) > bestW) bestW = s.weight; });
-        } else if (ex.type === 'giant') {
-            bestStr = `${h.weight}kg x ${h.totalReps}`; setStr = "Giant Set"; bestW = h.weight; bestR = h.totalReps;
-        }
-        maxWeights.push(bestW); maxReps.push(bestR || 0);
-        tbody.innerHTML += `<tr><td>${d}</td><td>${setStr}</td><td>${bestStr}</td></tr>`;
-    });
-
-    if(chartInstance) chartInstance.destroy();
-    const ctx = document.getElementById('progressChart').getContext('2d');
-    chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: dates.reverse(),
-            datasets: [ { label: 'Strength (Kg)', data: maxWeights.reverse(), borderColor: '#0a84ff', yAxisID: 'y' }, { label: 'Vol (Reps)', data: maxReps.reverse(), borderColor: '#30d158', yAxisID: 'y1' } ]
-        },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { display:true, position:'left', grid:{color:'#333'} }, y1: { display:true, position:'right', grid:{drawOnChartArea:false} } } }
-    });
-}
-
-// --- Logic ---
-function getSmartTarget(ex, setIndex) {
-    if(!ex.history || ex.history.length === 0) return { weight: '', reps: ex.min, type: 'start' };
+// --- LOGIC ENGINE ---
+function getSmartTarget(ex, setIndex, side = null) {
+    // Default safe return
+    let min = parseInt(ex.min), max = parseInt(ex.max), inc = parseFloat(ex.inc);
+    
+    // Switch for Superset B side
+    if (side === 'B') {
+        min = parseInt(ex.minB); max = parseInt(ex.maxB); inc = parseFloat(ex.incB || ex.inc);
+    }
+    
+    if(!ex.history || ex.history.length === 0) return { weight: '', reps: min, type: 'start' };
+    
     const lastSession = ex.history[ex.history.length - 1];
-    if(!lastSession.sets || !lastSession.sets[setIndex]) return { weight: '', reps: ex.min, type: 'new' };
-    const prevSet = lastSession.sets[setIndex];
-    const prevW = parseFloat(prevSet.weight), prevR = parseInt(prevSet.reps), prevRPE = prevSet.rpe ? parseFloat(prevSet.rpe) : 0;
-    const maxReps = parseInt(ex.max), minReps = parseInt(ex.min), inc = parseFloat(ex.inc);
+    let prevSet = null;
+
+    if (ex.type === 'normal') {
+        if (lastSession.sets && lastSession.sets[setIndex]) prevSet = lastSession.sets[setIndex];
+    } else if (ex.type === 'superset') {
+        if (side === 'A' && lastSession.setsA && lastSession.setsA[setIndex]) prevSet = lastSession.setsA[setIndex];
+        if (side === 'B' && lastSession.setsB && lastSession.setsB[setIndex]) prevSet = lastSession.setsB[setIndex];
+    }
+
+    if (!prevSet) return { weight: '', reps: min, type: 'new' };
+
+    const prevW = parseFloat(prevSet.weight);
+    const prevR = parseInt(prevSet.reps);
+    const prevRPE = prevSet.rpe ? parseFloat(prevSet.rpe) : 0;
+    
+    // RPE Limit Check
     let maxRPEAllowed = 10;
-    if(ex.targetRPE) { const parts = ex.targetRPE.match(/(\d+)/g); if(parts && parts.length > 0) maxRPEAllowed = parseFloat(parts[parts.length-1]); }
-    if (prevR < minReps) return { weight: prevW - inc, reps: minReps, type: 'regress', msg: 'Regress' };
-    if (prevR >= maxReps) { if(prevRPE <= maxRPEAllowed) return { weight: prevW + inc, reps: minReps, type: 'progress', msg: 'Go Up' }; else return { weight: prevW, reps: maxReps, type: 'hold', msg: 'RPE High' }; }
+    if(ex.targetRPE) {
+        const parts = ex.targetRPE.match(/(\d+)/g);
+        if(parts && parts.length > 0) maxRPEAllowed = parseFloat(parts[parts.length-1]);
+    }
+
+    // Algorithm
+    if (prevR < min) return { weight: prevW - inc, reps: min, type: 'regress', msg: 'Regress' };
+    if (prevR >= max) {
+        if(prevRPE <= maxRPEAllowed) return { weight: prevW + inc, reps: min, type: 'progress', msg: 'Go Up' };
+        else return { weight: prevW, reps: max, type: 'hold', msg: 'RPE High' };
+    }
     return { weight: prevW, reps: prevR + 1, type: 'hold', msg: '+1 Rep' };
 }
-function getInitials(name) { if(!name) return '?'; return name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase(); }
-function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); }
 
-function renderConfigFields() {
-    const type = document.getElementById('cfg-type').value;
-    const div = document.getElementById('cfg-dynamic-area'); div.innerHTML = '';
-    const rpeHTML = `<input id="cfg-rpe" placeholder="Target RPE (e.g. 7-9)">`;
-    if(type === 'normal') div.innerHTML = `<input type="text" id="cfg-name" placeholder="Exercise Name"><div class="grid-2"><input id="cfg-sets" placeholder="Sets"><input id="cfg-inc" placeholder="Increment"></div><div class="grid-2"><input id="cfg-min" placeholder="Min Reps"><input id="cfg-max" placeholder="Max Reps"></div>${rpeHTML}`;
-    else if (type === 'superset') div.innerHTML = `<div class="grid-2"><input id="cfg-sets" placeholder="Sets (3)"><input id="cfg-inc" placeholder="Common Inc (e.g. 2.5)"></div>${rpeHTML}<hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:var(--accent)">Exercise 1</label><input id="cfg-name" placeholder="Name"><div class="grid-2"><input id="cfg-min" placeholder="Min"><input id="cfg-max" placeholder="Max"></div><hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:#ff9f0a">Exercise 2</label><input id="cfg-name-b" placeholder="Name"><div class="grid-3"><input id="cfg-min-b" placeholder="Min"><input id="cfg-max-b" placeholder="Max"><input id="cfg-inc-b" placeholder="Inc B (opt)"></div>`;
-    else if (type === 'giant') div.innerHTML = `<input type="text" id="cfg-name" placeholder="Exercise Name"><div class="grid-2"><input id="cfg-min" placeholder="Start Reps"><input id="cfg-max" placeholder="End Reps"></div><div class="grid-2"><input id="cfg-inc" placeholder="Wt Inc"><input id="cfg-rep-inc" placeholder="Rep Inc"></div>`;
-}
-
-function openEditModal(idx = null) {
-    document.getElementById('modal-edit').classList.remove('hidden'); editIndex = idx;
-    document.getElementById('cfg-dynamic-area').innerHTML = ''; document.getElementById('cfg-type').value = 'normal';
-    if(idx === null) renderConfigFields();
-    if(idx !== null) {
-        const ex = exercises[idx]; document.getElementById('cfg-day').value = ex.day; document.getElementById('cfg-type').value = ex.type; document.getElementById('btn-delete').classList.remove('hidden'); renderConfigFields();
-        setTimeout(() => {
-            document.getElementById('cfg-name').value = ex.name;
-            if(ex.type === 'normal') { document.getElementById('cfg-sets').value = ex.sets; document.getElementById('cfg-inc').value = ex.inc; document.getElementById('cfg-min').value = ex.min; document.getElementById('cfg-max').value = ex.max; document.getElementById('cfg-rpe').value = ex.targetRPE || ''; }
-            else if (ex.type === 'superset') { document.getElementById('cfg-sets').value = ex.sets; document.getElementById('cfg-inc').value = ex.inc; document.getElementById('cfg-min').value = ex.min; document.getElementById('cfg-max').value = ex.max; document.getElementById('cfg-name-b').value = ex.nameB; document.getElementById('cfg-min-b').value = ex.minB; document.getElementById('cfg-max-b').value = ex.maxB; document.getElementById('cfg-inc-b').value = ex.incB || ex.inc; document.getElementById('cfg-rpe').value = ex.targetRPE || ''; }
-            else if (ex.type === 'giant') { document.getElementById('cfg-min').value = ex.min; document.getElementById('cfg-max').value = ex.max; document.getElementById('cfg-inc').value = ex.inc; document.getElementById('cfg-rep-inc').value = ex.repInc || 10; }
-        }, 50);
-    } else { document.getElementById('cfg-day').value = activeDay || ''; document.getElementById('btn-delete').classList.add('hidden'); }
-}
-
-function saveExercise() {
-    const ex = editIndex !== null ? exercises[editIndex] : { id: Date.now(), history: [] };
-    ex.day = document.getElementById('cfg-day').value; ex.name = document.getElementById('cfg-name').value; ex.type = document.getElementById('cfg-type').value;
-    if(ex.type === 'normal') { ex.sets = document.getElementById('cfg-sets').value; ex.inc = document.getElementById('cfg-inc').value; ex.min = document.getElementById('cfg-min').value; ex.max = document.getElementById('cfg-max').value; ex.targetRPE = document.getElementById('cfg-rpe').value; }
-    else if (ex.type === 'superset') { ex.sets = document.getElementById('cfg-sets').value; ex.inc = document.getElementById('cfg-inc').value; ex.min = document.getElementById('cfg-min').value; ex.max = document.getElementById('cfg-max').value; ex.targetRPE = document.getElementById('cfg-rpe').value; ex.nameB = document.getElementById('cfg-name-b').value; ex.minB = document.getElementById('cfg-min-b').value; ex.maxB = document.getElementById('cfg-max-b').value; ex.incB = document.getElementById('cfg-inc-b').value; }
-    else if (ex.type === 'giant') { ex.min = document.getElementById('cfg-min').value; ex.max = document.getElementById('cfg-max').value; ex.inc = document.getElementById('cfg-inc').value; ex.repInc = document.getElementById('cfg-rep-inc').value; }
-    if(editIndex === null) exercises.push(ex); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); if(activeDay) renderExercises(); else renderHome();
-}
-function moveDay(d, dir) { const idx = dayOrder.indexOf(d); if(idx + dir >= 0 && idx + dir < dayOrder.length) { [dayOrder[idx], dayOrder[idx+dir]] = [dayOrder[idx+dir], dayOrder[idx]]; renderHome(); } }
-function moveExercise(idx, dir) { const ex = exercises[idx]; const subset = exercises.map((e,i) => e.day === ex.day ? i : -1).filter(i => i !== -1); const pos = subset.indexOf(idx); if(pos + dir >= 0 && pos + dir < subset.length) { const swapIdx = subset[pos+dir]; [exercises[idx], exercises[swapIdx]] = [exercises[swapIdx], exercises[idx]]; localStorage.setItem('exercises_v6', JSON.stringify(exercises)); renderExercises(); } }
-function deleteExercise() { if(confirm("Delete?")) { exercises.splice(editIndex, 1); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); renderExercises(); } }
-function resetAllData() { toggleMenu(); if(confirm("Reset All?")) { localStorage.clear(); location.reload(); } }
-
+// --- LOGGING ---
 function openLogModal(idx) {
     editIndex = idx; const ex = exercises[idx];
     document.getElementById('modal-log').classList.remove('hidden'); document.getElementById('log-title').innerText = ex.name; document.getElementById('log-date').valueAsDate = new Date();
     const container = document.getElementById('log-inputs'); container.innerHTML = '';
-    const numSets = ex.sets || 3;
-    if(ex.type === 'giant') addSetInputRow(); else for(let i=0; i<numSets; i++) addSetInputRow(i);
+    
+    if(ex.type === 'giant') addSetInputRow();
+    else {
+        const numSets = ex.sets || 3;
+        for(let i=0; i<numSets; i++) addSetInputRow(i);
+    }
 }
+
 function addSetInputRow(setIndex = null, isManual = false) {
     const ex = exercises[editIndex]; const div = document.createElement('div');
-    const effectiveIndex = setIndex !== null ? setIndex : document.querySelectorAll('.set-row, .super-block').length;
+    const idx = setIndex !== null ? setIndex : document.querySelectorAll('.set-row, .super-block').length;
+
     if(ex.type === 'normal') {
-        let prevText = "New Set", suggestion = { weight: '', reps: '' }, badge = '';
-        if(ex.history && ex.history.length > 0) {
-            const last = ex.history[ex.history.length-1];
-            if(last.sets && last.sets[effectiveIndex]) {
-                const p = last.sets[effectiveIndex]; prevText = `Last: ${p.weight}kg x ${p.reps} @ ${p.rpe || '-'} RPE`;
-                suggestion = getSmartTarget(ex, effectiveIndex);
-                if(suggestion.type === 'progress') badge = `<span class="target-pill">⬆ Inc Wt</span>`;
-                if(suggestion.type === 'regress') badge = `<span class="target-pill regress">⬇ Deload</span>`;
-                if(suggestion.type === 'hold') badge = `<span class="target-pill hold">Hold</span>`;
-            }
-        }
-        div.innerHTML = `<div style="background:#252525; padding:10px; border-radius:8px; margin-bottom:10px;"><div class="row"><span style="font-size:12px; font-weight:bold; color:#888;">SET ${effectiveIndex+1}</span><span style="font-size:11px; color:#aaa;">${prevText}</span></div><div class="set-row" style="margin-top:5px; margin-bottom:0;"><input type="number" class="l-w" placeholder="Kg" value="${suggestion.weight}"><input type="number" class="l-r" placeholder="Reps" value="${suggestion.reps}"><input type="number" class="l-rpe" placeholder="RPE">${isManual ? '<button class="del-btn" onclick="this.closest(\'div\').parentElement.remove()">X</button>' : ''}</div><div class="row-start" style="margin-top:4px;">${badge}<span style="font-size:11px; color:var(--success);">Target: ${suggestion.weight || '?'}kg x ${suggestion.reps || '?'}</span></div></div>`;
-    } else if (ex.type === 'superset') {
-        const initA = getInitials(ex.name), initB = getInitials(ex.nameB);
+        const t = getSmartTarget(ex, idx);
+        let badge = '';
+        if(t.type === 'progress') badge = `<span class="target-pill">⬆ Inc Wt</span>`;
+        if(t.type === 'regress') badge = `<span class="target-pill regress">⬇ Deload</span>`;
+        
+        div.innerHTML = `<div style="background:#252525; padding:10px; border-radius:8px; margin-bottom:10px;"><div class="row"><span style="font-size:12px; font-weight:bold; color:#888;">SET ${idx+1}</span></div><div class="set-row" style="margin-top:5px; margin-bottom:0;"><input type="number" class="l-w" placeholder="Kg" value="${t.weight}"><input type="number" class="l-r" placeholder="Reps" value="${t.reps}"><input type="number" class="l-rpe" placeholder="RPE">${isManual ? '<button class="del-btn" onclick="this.closest(\'div\').parentElement.remove()">X</button>' : ''}</div><div class="row-start" style="margin-top:4px;">${badge}<span style="font-size:11px; color:var(--success);">Target: ${t.weight||'?'}kg x ${t.reps||'?'}</span></div></div>`;
+    } 
+    else if (ex.type === 'superset') {
+        const tA = getSmartTarget(ex, idx, 'A');
+        const tB = getSmartTarget(ex, idx, 'B');
+        const initA = (ex.name||'?').substring(0,2).toUpperCase();
+        const initB = (ex.nameB||'?').substring(0,2).toUpperCase();
+        
         div.className = 'super-block';
-        div.innerHTML = `<div style="font-size:12px; color:#666; margin-bottom:5px; text-align:right">SET ${effectiveIndex+1}</div><div class="super-row"><div class="super-label">${initA}</div><input type="number" class="l-w-a" placeholder="Kg"><input type="number" class="l-r-a" placeholder="Reps"><input type="number" class="l-rpe-a" placeholder="RPE"></div><div class="super-row"><div class="super-label">${initB}</div><input type="number" class="l-w-b" placeholder="Kg"><input type="number" class="l-r-b" placeholder="Reps"><input type="number" class="l-rpe-b" placeholder="RPE"></div>${isManual ? '<div class="super-del" onclick="this.parentElement.remove()">X</div>' : ''}`;
-    } else if (ex.type === 'giant') {
+        div.innerHTML = `
+            <div style="font-size:12px; color:#666; margin-bottom:5px; text-align:right">SET ${idx+1}</div>
+            <div class="super-row"><div class="super-label">${initA}</div><input type="number" class="l-w-a" placeholder="Kg" value="${tA.weight}"><input type="number" class="l-r-a" placeholder="Reps" value="${tA.reps}"><input type="number" class="l-rpe-a" placeholder="RPE"></div>
+            <div style="font-size:10px; color:var(--success); text-align:right; margin-top:-4px; margin-bottom:4px;">Target A: ${tA.weight||'?'}kg x ${tA.reps}</div>
+            <div class="super-row"><div class="super-label">${initB}</div><input type="number" class="l-w-b" placeholder="Kg" value="${tB.weight}"><input type="number" class="l-r-b" placeholder="Reps" value="${tB.reps}"><input type="number" class="l-rpe-b" placeholder="RPE"></div>
+            <div style="font-size:10px; color:#ff9f0a; text-align:right; margin-top:-4px;">Target B: ${tB.weight||'?'}kg x ${tB.reps}</div>
+            ${isManual ? '<div class="super-del" onclick="this.parentElement.remove()">X</div>' : ''}
+        `;
+    } 
+    else if (ex.type === 'giant') {
         div.innerHTML = `<label>Giant Set Totals</label><div class="grid-2"><input type="number" id="log-g-wt" placeholder="Weight"><input type="number" id="log-g-reps" placeholder="Total Reps"></div>`;
     }
     document.getElementById('log-inputs').appendChild(div);
 }
+
 function saveLog() {
     const ex = exercises[editIndex]; const entry = { date: document.getElementById('log-date').value, notes: document.getElementById('log-notes').value };
     if(ex.type === 'giant') { entry.weight = document.getElementById('log-g-wt').value; entry.totalReps = document.getElementById('log-g-reps').value; }
@@ -416,8 +327,64 @@ function saveLog() {
         rows.forEach(r => { if(r.value) { const parent = r.parentElement; sets.push({ weight: r.value, reps: parent.querySelector('.l-r').value, rpe: parent.querySelector('.l-rpe') ? parent.querySelector('.l-rpe').value : '' }); } });
         entry.sets = sets;
     }
-    ex.history.push(entry); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals();
+    ex.history.push(entry); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); renderExercises();
 }
+
+// --- ANALYTICS ---
+function openStats(idx) {
+    const ex = exercises[idx]; toggleViews('stats'); document.getElementById('stats-title').innerText = ex.name;
+    const table = document.getElementById('stats-table'); table.innerHTML = `<thead><tr><th>Date</th><th>Sets</th><th>Best</th></tr></thead><tbody></tbody>`;
+    const tbody = table.querySelector('tbody'), dates = [], maxWeights = [], maxReps = [];
+    
+    ex.history.slice(-4).reverse().forEach(h => {
+        const d = new Date(h.date).toLocaleDateString('en-US', {month:'short', day:'numeric'}); dates.push(d);
+        let bestW=0, bestR=0, setStr="", bestStr="-";
+        if(ex.type==='normal' && h.sets) { h.sets.forEach(s=>{ setStr+=`${s.weight}x${s.reps}<br>`; if(parseFloat(s.weight)>bestW){bestW=s.weight; bestR=s.reps;} }); bestStr=`${bestW}kg x ${bestR}`; }
+        else if(ex.type==='superset' && h.setsA) { setStr="Superset"; h.setsA.forEach(s=>{ if(parseFloat(s.weight)>bestW) bestW=s.weight; }); bestStr=`${bestW}kg (A)`; }
+        else if(ex.type==='giant') { bestW=h.weight; bestR=h.totalReps; bestStr=`${bestW}kg x ${bestR}`; }
+        maxWeights.push(bestW); maxReps.push(bestR||0); tbody.innerHTML+=`<tr><td>${d}</td><td>${setStr}</td><td>${bestStr}</td></tr>`;
+    });
+    
+    if(chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById('progressChart').getContext('2d');
+    chartInstance = new Chart(ctx, { type: 'line', data: { labels: dates.reverse(), datasets: [{label:'Strength', data:maxWeights.reverse(), borderColor:'#0a84ff', yAxisID:'y'}, {label:'Vol', data:maxReps.reverse(), borderColor:'#30d158', yAxisID:'y1'}] }, options: { maintainAspectRatio:false, scales:{y:{display:true,position:'left',grid:{color:'#333'}}, y1:{display:true,position:'right',grid:{drawOnChartArea:false}}} } });
+}
+
+// --- UTILS ---
+function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); }
+function renderConfigFields() {
+    const type = document.getElementById('cfg-type').value, div = document.getElementById('cfg-dynamic-area'); div.innerHTML = '';
+    const rpeHTML = `<input id="cfg-rpe" placeholder="Target RPE (e.g. 7-9)">`;
+    if(type === 'normal') div.innerHTML = `<input id="cfg-name" placeholder="Name"><div class="grid-2"><input id="cfg-sets" placeholder="Sets"><input id="cfg-inc" placeholder="Increment"></div><div class="grid-2"><input id="cfg-min" placeholder="Min"><input id="cfg-max" placeholder="Max"></div>${rpeHTML}`;
+    else if (type === 'superset') div.innerHTML = `<div class="grid-2"><input id="cfg-sets" placeholder="Sets"><input id="cfg-inc" placeholder="Inc"></div>${rpeHTML}<hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:var(--accent)">Exercise A</label><input id="cfg-name" placeholder="Name"><div class="grid-2"><input id="cfg-min" placeholder="Min"><input id="cfg-max" placeholder="Max"></div><hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:#ff9f0a">Exercise B</label><input id="cfg-name-b" placeholder="Name"><div class="grid-3"><input id="cfg-min-b" placeholder="Min"><input id="cfg-max-b" placeholder="Max"><input id="cfg-inc-b" placeholder="Inc B"></div>`;
+    else if (type === 'giant') div.innerHTML = `<input id="cfg-name" placeholder="Name"><div class="grid-2"><input id="cfg-min" placeholder="Start"><input id="cfg-max" placeholder="End"></div><div class="grid-2"><input id="cfg-inc" placeholder="Wt Inc"><input id="cfg-rep-inc" placeholder="Rep Inc"></div>`;
+}
+function openEditModal(idx = null) {
+    document.getElementById('modal-edit').classList.remove('hidden'); editIndex = idx;
+    document.getElementById('cfg-dynamic-area').innerHTML = ''; document.getElementById('cfg-type').value = 'normal';
+    if(idx === null) renderConfigFields();
+    else {
+        const ex = exercises[idx]; document.getElementById('cfg-day').value = ex.day; document.getElementById('cfg-type').value = ex.type; document.getElementById('btn-delete').classList.remove('hidden'); renderConfigFields();
+        setTimeout(() => {
+            document.getElementById('cfg-name').value = ex.name;
+            if(ex.type==='normal'){ document.getElementById('cfg-sets').value=ex.sets; document.getElementById('cfg-inc').value=ex.inc; document.getElementById('cfg-min').value=ex.min; document.getElementById('cfg-max').value=ex.max; document.getElementById('cfg-rpe').value=ex.targetRPE||''; }
+            if(ex.type==='superset'){ document.getElementById('cfg-sets').value=ex.sets; document.getElementById('cfg-inc').value=ex.inc; document.getElementById('cfg-min').value=ex.min; document.getElementById('cfg-max').value=ex.max; document.getElementById('cfg-name-b').value=ex.nameB; document.getElementById('cfg-min-b').value=ex.minB; document.getElementById('cfg-max-b').value=ex.maxB; document.getElementById('cfg-inc-b').value=ex.incB||ex.inc; document.getElementById('cfg-rpe').value=ex.targetRPE||''; }
+            if(ex.type==='giant'){ document.getElementById('cfg-min').value=ex.min; document.getElementById('cfg-max').value=ex.max; document.getElementById('cfg-inc').value=ex.inc; document.getElementById('cfg-rep-inc').value=ex.repInc||10; }
+        }, 50);
+    }
+}
+function saveExercise() {
+    const ex = editIndex!==null ? exercises[editIndex] : {id:Date.now(), history:[]};
+    ex.day=document.getElementById('cfg-day').value; ex.name=document.getElementById('cfg-name').value; ex.type=document.getElementById('cfg-type').value;
+    if(ex.type==='normal'){ ex.sets=document.getElementById('cfg-sets').value; ex.inc=document.getElementById('cfg-inc').value; ex.min=document.getElementById('cfg-min').value; ex.max=document.getElementById('cfg-max').value; ex.targetRPE=document.getElementById('cfg-rpe').value; }
+    if(ex.type==='superset'){ ex.sets=document.getElementById('cfg-sets').value; ex.inc=document.getElementById('cfg-inc').value; ex.min=document.getElementById('cfg-min').value; ex.max=document.getElementById('cfg-max').value; ex.nameB=document.getElementById('cfg-name-b').value; ex.minB=document.getElementById('cfg-min-b').value; ex.maxB=document.getElementById('cfg-max-b').value; ex.incB=document.getElementById('cfg-inc-b').value; ex.targetRPE=document.getElementById('cfg-rpe').value; }
+    if(ex.type==='giant'){ ex.min=document.getElementById('cfg-min').value; ex.max=document.getElementById('cfg-max').value; ex.inc=document.getElementById('cfg-inc').value; ex.repInc=document.getElementById('cfg-rep-inc').value; }
+    if(editIndex===null) exercises.push(ex); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); if(activeDay) renderExercises(); else renderHome();
+}
+function moveDay(d,dir) { const i=dayOrder.indexOf(d); if(i+dir>=0 && i+dir<dayOrder.length){ [dayOrder[i],dayOrder[i+dir]]=[dayOrder[i+dir],dayOrder[i]]; renderHome(); } }
+function moveExercise(i,dir) { const ex=exercises[i], sub=exercises.map((e,idx)=>e.day===ex.day?idx:-1).filter(n=>n!==-1), pos=sub.indexOf(i); if(pos+dir>=0 && pos+dir<sub.length){ const swap=sub[pos+dir]; [exercises[i],exercises[swap]]=[exercises[swap],exercises[i]]; localStorage.setItem('exercises_v6', JSON.stringify(exercises)); renderExercises(); } }
+function deleteExercise(){ if(confirm("Delete?")){ exercises.splice(editIndex,1); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); renderExercises(); } }
+function resetAllData(){ toggleMenu(); if(confirm("Reset All?")){ localStorage.clear(); location.reload(); } }
 
 renderHome();
 </script>
