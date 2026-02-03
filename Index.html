@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Tracker V12 (Myo Match)</title>
+    <title>Pro Tracker V13 (Timer)</title>
     <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,7 +14,7 @@
         .container { padding: 16px; max-width: 600px; margin: 0 auto; }
         h1 { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
         
-        /* HEADER */
+        /* HEADER & MENU */
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: relative; width: 100%; }
         .dropdown-menu { position: absolute; top: 40px; right: 0; background: #252525; border: 1px solid #333; border-radius: 12px; padding: 6px; width: 180px; z-index: 200; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .menu-item { display: block; width: 100%; padding: 12px; text-align: left; background: none; border: none; color: #eee; font-size: 15px; border-radius: 8px; cursor: pointer; }
@@ -52,6 +52,7 @@
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .set-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 12px; align-items: center; }
         
+        /* SUPERSET STYLES */
         .super-block { background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 10px; position: relative; border-left: 3px solid var(--accent); }
         .super-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
         .super-label { width: 30px; font-weight: bold; font-size: 13px; color: #888; text-align: center; text-transform: uppercase;}
@@ -65,8 +66,12 @@
         .chart-container { position: relative; height: 250px; width: 100%; margin-bottom: 20px; }
         .fab { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 30px; background: var(--accent); color: white; font-size: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(10,132,255,0.4); border: none; z-index: 50; }
         
-        /* Myo Badge */
-        .myo-badge { font-size:10px; background: #BF5AF2; color:white; padding:2px 6px; border-radius:4px; font-weight:bold; }
+        /* TIMER STYLES */
+        #timer-container { background: #1c1c1e; padding: 12px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
+        #timer-display { font-variant-numeric: tabular-nums; font-size: 24px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+        .timer-btn { padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; width: auto; margin: 0; }
+        
+        .last-note-box { background: rgba(10, 132, 255, 0.1); border-left: 3px solid var(--accent); color: #ccc; padding: 10px; font-size: 13px; margin-bottom: 15px; border-radius: 6px; font-style: italic;}
     </style>
 </head>
 <body>
@@ -94,6 +99,12 @@
                 <h1 id="day-title" style="margin:0;">Day</h1>
             </div>
         </div>
+        
+        <div id="timer-container">
+            <div id="timer-display">00:00:00</div>
+            <button id="timer-btn" class="timer-btn btn-success" onclick="toggleTimer()">Start</button>
+        </div>
+
         <div id="exercises-list"></div>
     </div>
 
@@ -136,10 +147,11 @@
 <div id="modal-log" class="modal hidden">
     <h2 id="log-title">Log Workout</h2>
     <input type="date" id="log-date">
+    <div id="last-note-box" class="last-note-box hidden"></div>
     <div id="log-inputs"></div>
     <button class="btn-secondary" onclick="addSetInputRow(null, true)" id="btn-add-set">+ Add Set</button>
-    <label class="meta-text" style="margin-top:20px;">Notes</label>
-    <textarea id="log-notes" rows="2"></textarea>
+    <label class="meta-text" style="margin-top:20px;">Today's Notes</label>
+    <textarea id="log-notes" rows="2" placeholder="How did it feel?"></textarea>
     <button class="btn-success" onclick="saveLog()">Complete Workout</button>
     <button class="btn-secondary" onclick="closeModals()">Cancel</button>
 </div>
@@ -155,15 +167,44 @@ if (!dayOrder) { dayOrder = JSON.parse(localStorage.getItem('day_order_v3')) || 
 exercises.forEach(ex => { if(!ex.id) ex.id = Date.now() + Math.random().toString(16).slice(2); });
 let activeDay = null, editIndex = null, chartInstance = null;
 
+// --- TIMER LOGIC ---
+let timerInterval;
+function updateTimerDisplay() {
+    const start = localStorage.getItem('timerStart');
+    const display = document.getElementById('timer-display');
+    const btn = document.getElementById('timer-btn');
+    if (!start) {
+        display.innerText = "00:00:00";
+        btn.innerText = "Start"; btn.className = "timer-btn btn-success";
+        return;
+    }
+    const diff = Math.floor((Date.now() - parseInt(start)) / 1000);
+    const h = Math.floor(diff / 3600).toString().padStart(2, '0');
+    const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+    const s = (diff % 60).toString().padStart(2, '0');
+    display.innerText = `${h}:${m}:${s}`;
+    btn.innerText = "Stop"; btn.className = "timer-btn btn-danger";
+}
+function toggleTimer() {
+    if (localStorage.getItem('timerStart')) {
+        if(confirm("Stop Timer?")) { localStorage.removeItem('timerStart'); clearInterval(timerInterval); updateTimerDisplay(); }
+    } else {
+        localStorage.setItem('timerStart', Date.now());
+        timerInterval = setInterval(updateTimerDisplay, 1000);
+        updateTimerDisplay();
+    }
+}
+setInterval(updateTimerDisplay, 1000); // Global ticker
+
 // --- MENU & BACKUP ---
 function toggleMenu() { document.getElementById('home-menu').classList.toggle('hidden'); document.getElementById('menu-overlay').style.display = document.getElementById('home-menu').classList.contains('hidden') ? 'none' : 'block'; }
 function triggerImport() { toggleMenu(); document.getElementById('file-input').click(); }
-function exportData() { toggleMenu(); const data = { exercises, dayOrder, version: "12.0", date: new Date().toISOString() }; const node = document.createElement('a'); node.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data)); node.download = "workout_backup_" + new Date().toISOString().slice(0,10) + ".json"; document.body.appendChild(node); node.click(); node.remove(); }
+function exportData() { toggleMenu(); const data = { exercises, dayOrder, version: "13.0", date: new Date().toISOString() }; const node = document.createElement('a'); node.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data)); node.download = "workout_backup_" + new Date().toISOString().slice(0,10) + ".json"; document.body.appendChild(node); node.click(); node.remove(); }
 function importData(input) { const file = input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = e => { try { const data = JSON.parse(e.target.result); if(data.exercises && confirm("Overwrite data?")) { exercises = data.exercises; dayOrder = data.dayOrder || []; localStorage.setItem('exercises_v6', JSON.stringify(exercises)); location.reload(); } } catch(err) { alert("Error."); } }; reader.readAsText(file); }
 
 // --- VIEWS ---
 function goHome() { activeDay = null; toggleViews('home'); renderHome(); }
-function openDay(day) { activeDay = day; toggleViews('day'); document.getElementById('day-title').innerText = day; renderExercises(); }
+function openDay(day) { activeDay = day; toggleViews('day'); document.getElementById('day-title').innerText = day; renderExercises(); updateTimerDisplay(); }
 function closeStats() { toggleViews(activeDay ? 'day' : 'home'); }
 function toggleViews(v) { ['view-home','view-day','view-stats'].forEach(id => document.getElementById(id).classList.add('hidden')); document.getElementById('view-'+v).classList.remove('hidden'); }
 
@@ -237,31 +278,24 @@ function getSmartTarget(ex, setIndex, side = null) {
 
     const baseWeight = parseFloat(prevSetThisRow.weight);
     
-    // --- MYO MATCH LOGIC ---
+    // Myo Logic
     if(ex.type === 'myo') {
-        // Set 1 Logic: Always Last Set 1 + 1 (unless weight up triggered)
-        // Weight Up Trigger: Last Set of Last Session was 0 rests AND >= max reps
         let lastSetOfSession = setsArray[setsArray.length - 1];
         let triggered = false;
-        
-        // Check Last Set condition for weight up
         if(lastSetOfSession) {
             const lsReps = parseInt(lastSetOfSession.reps);
             const lsRests = lastSetOfSession.rests ? parseInt(lastSetOfSession.rests) : 0;
             if (lsReps >= max && lsRests === 0) triggered = true;
         }
-
         if(setIndex === 0) {
             if(triggered) return { weight: baseWeight + inc, reps: min, type: 'progress', msg: 'Go Up' };
             else return { weight: baseWeight, reps: parseInt(prevSetThisRow.reps) + 1, type: 'hold', msg: '+1 Rep' };
         } else {
-            // Sets 2+: Match Set 1 (Target display only)
-            // We don't really have a 'target' weight calculation different from base
             return { weight: baseWeight, reps: "Match", type: 'hold' };
         }
     }
 
-    // --- NORMAL / SUPERSET LOGIC ---
+    // Normal Logic (Last Set Trigger)
     let lastSetOfSession = setsArray[setsArray.length - 1]; 
     if(!lastSetOfSession) return { weight: baseWeight, reps: min, type: 'hold' };
     const lastSetReps = parseInt(lastSetOfSession.reps);
@@ -285,6 +319,24 @@ function getSmartTarget(ex, setIndex, side = null) {
 function openLogModal(idx) {
     editIndex = idx; const ex = exercises[idx];
     document.getElementById('modal-log').classList.remove('hidden'); document.getElementById('log-title').innerText = ex.name; document.getElementById('log-date').valueAsDate = new Date();
+    
+    // Notes Fix: Clear Input
+    document.getElementById('log-notes').value = ''; 
+    
+    // Last Note Display
+    const noteBox = document.getElementById('last-note-box');
+    if(ex.history && ex.history.length > 0) {
+        const lastNote = ex.history[ex.history.length-1].notes;
+        if(lastNote) {
+            noteBox.classList.remove('hidden');
+            noteBox.innerText = "Last Session Note: " + lastNote;
+        } else {
+            noteBox.classList.add('hidden');
+        }
+    } else {
+        noteBox.classList.add('hidden');
+    }
+
     const container = document.getElementById('log-inputs'); container.innerHTML = '';
     if(ex.type === 'giant') addSetInputRow();
     else { const numSets = ex.sets || 3; for(let i=0; i<numSets; i++) addSetInputRow(i); }
@@ -311,7 +363,6 @@ function addSetInputRow(setIndex = null, isManual = false) {
             }
         }
         
-        // Myo Field Logic: Set 1 = RPE, Set 2+ = Rests
         let thirdInput = `<input type="number" class="l-rpe" placeholder="RPE">`;
         if(ex.type === 'myo' && idx > 0) thirdInput = `<input type="number" class="l-rests" placeholder="Rests (Count)">`;
 
