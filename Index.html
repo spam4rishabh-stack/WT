@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Tracker V10 (Superset Fix)</title>
+    <title>Pro Tracker V11 (Fixes)</title>
     <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/180/007aff/dumbbell.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,8 +14,8 @@
         .container { padding: 16px; max-width: 600px; margin: 0 auto; }
         h1 { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
         
-        /* Menu System */
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: relative; }
+        /* HEADER & MENU (Fixed Alignment) */
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: relative; width: 100%; }
         .dropdown-menu { position: absolute; top: 40px; right: 0; background: #252525; border: 1px solid #333; border-radius: 12px; padding: 6px; width: 180px; z-index: 200; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .menu-item { display: block; width: 100%; padding: 12px; text-align: left; background: none; border: none; color: #eee; font-size: 15px; border-radius: 8px; cursor: pointer; }
         .menu-item:active { background: #3a3a3c; }
@@ -26,7 +26,7 @@
         .row { display: flex; justify-content: space-between; align-items: center; }
         .row-start { display: flex; justify-content: flex-start; align-items: center; gap: 10px; }
         
-        .btn-icon { background: none; border: none; color: var(--accent); font-size: 22px; padding: 4px 8px; cursor: pointer; }
+        .btn-icon { background: none; border: none; color: var(--accent); font-size: 22px; padding: 4px 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .btn-move { color: var(--sub); font-size: 14px; padding: 4px 8px; background: #2c2c2e; border-radius: 4px; margin-left: 4px; }
         .ex-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; display: block;}
         .meta-text { font-size: 13px; color: var(--sub); display: block; }
@@ -35,6 +35,7 @@
         .target-pill.regress { background: var(--danger); color: white; }
         .target-pill.hold { background: #ff9f0a; color: white; }
 
+        /* INPUTS */
         input, select, textarea { background: #2c2c2e; border: none; color: white; padding: 12px; border-radius: 10px; width: 100%; box-sizing: border-box; font-size: 16px; margin-bottom: 12px; font-family: inherit; }
         input[type="date"] { color-scheme: dark; } 
         button { border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; width: 100%; cursor: pointer; margin-top: 8px; }
@@ -51,11 +52,15 @@
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .set-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 12px; align-items: center; }
         
+        /* SUPERSET STYLES */
         .super-block { background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 10px; position: relative; border-left: 3px solid var(--accent); }
         .super-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
         .super-label { width: 30px; font-weight: bold; font-size: 13px; color: #888; text-align: center; text-transform: uppercase;}
         .super-del { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); height: 30px; width: 30px; background: #3a3a3c; color: var(--danger); border-radius: 4px; display:flex; align-items:center; justify-content:center; cursor:pointer;}
         
+        /* PREV DATA TEXT */
+        .prev-data { font-size: 11px; color: #888; margin-bottom: 4px; display: block; text-align: right; width: 100%; }
+
         .history-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
         .history-table th, .history-table td { border: 1px solid #333; padding: 8px; text-align: center; color: #ddd; }
         .history-table th { background: #222; color: var(--accent); }
@@ -153,7 +158,7 @@ let activeDay = null, editIndex = null, chartInstance = null;
 function toggleMenu() { document.getElementById('home-menu').classList.toggle('hidden'); document.getElementById('menu-overlay').style.display = document.getElementById('home-menu').classList.contains('hidden') ? 'none' : 'block'; }
 function triggerImport() { toggleMenu(); document.getElementById('file-input').click(); }
 function exportData() {
-    toggleMenu(); const data = { exercises, dayOrder, version: "10.0", date: new Date().toISOString() };
+    toggleMenu(); const data = { exercises, dayOrder, version: "11.0", date: new Date().toISOString() };
     const node = document.createElement('a'); node.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
     node.download = "workout_backup_" + new Date().toISOString().slice(0,10) + ".json"; document.body.appendChild(node); node.click(); node.remove();
 }
@@ -188,9 +193,8 @@ function renderExercises() {
         let subtext = `${ex.sets || 3} Sets`;
         let targetDisplay = "";
 
-        // Calculate visual target for card
         if (ex.type === 'normal') {
-            const t = getSmartTarget(ex, 0); // Check Set 1
+            const t = getSmartTarget(ex, 0); 
             if(t.weight) targetDisplay = `<span class="target-text">Target: ${t.weight}kg x ${t.reps}</span>`;
         } else if (ex.type === 'superset') {
             const tA = getSmartTarget(ex, 0, 'A');
@@ -224,48 +228,55 @@ function renderExercises() {
     });
 }
 
-// --- LOGIC ENGINE ---
+// --- LOGIC ENGINE V11 (Fixing Progression) ---
 function getSmartTarget(ex, setIndex, side = null) {
-    // Default safe return
+    // 1. Get Params based on Side (Superset vs Normal)
     let min = parseInt(ex.min), max = parseInt(ex.max), inc = parseFloat(ex.inc);
-    
-    // Switch for Superset B side
-    if (side === 'B') {
-        min = parseInt(ex.minB); max = parseInt(ex.maxB); inc = parseFloat(ex.incB || ex.inc);
-    }
-    
+    if (side === 'B') { min = parseInt(ex.minB); max = parseInt(ex.maxB); inc = parseFloat(ex.incB || ex.inc); }
+
+    // 2. Safe defaults
     if(!ex.history || ex.history.length === 0) return { weight: '', reps: min, type: 'start' };
-    
     const lastSession = ex.history[ex.history.length - 1];
-    let prevSet = null;
-
-    if (ex.type === 'normal') {
-        if (lastSession.sets && lastSession.sets[setIndex]) prevSet = lastSession.sets[setIndex];
-    } else if (ex.type === 'superset') {
-        if (side === 'A' && lastSession.setsA && lastSession.setsA[setIndex]) prevSet = lastSession.setsA[setIndex];
-        if (side === 'B' && lastSession.setsB && lastSession.setsB[setIndex]) prevSet = lastSession.setsB[setIndex];
-    }
-
-    if (!prevSet) return { weight: '', reps: min, type: 'new' };
-
-    const prevW = parseFloat(prevSet.weight);
-    const prevR = parseInt(prevSet.reps);
-    const prevRPE = prevSet.rpe ? parseFloat(prevSet.rpe) : 0;
     
-    // RPE Limit Check
+    // 3. Find specific Previous Set for THIS row (to get the base weight)
+    let prevSetThisRow = null;
+    let setsArray = (ex.type==='superset') ? (side==='A'?lastSession.setsA:lastSession.setsB) : lastSession.sets;
+    if(setsArray && setsArray[setIndex]) prevSetThisRow = setsArray[setIndex];
+    if (!prevSetThisRow) return { weight: '', reps: min, type: 'new' };
+
+    const baseWeight = parseFloat(prevSetThisRow.weight);
+
+    // 4. CHECK THE FINAL SET of the Last Session (The Trigger)
+    let lastSetOfSession = setsArray[setsArray.length - 1]; 
+    if(!lastSetOfSession) return { weight: baseWeight, reps: min, type: 'hold' };
+
+    const lastSetReps = parseInt(lastSetOfSession.reps);
+    const lastSetRPE = lastSetOfSession.rpe ? parseFloat(lastSetOfSession.rpe) : 0;
+    
+    // RPE Limit
     let maxRPEAllowed = 10;
-    if(ex.targetRPE) {
-        const parts = ex.targetRPE.match(/(\d+)/g);
-        if(parts && parts.length > 0) maxRPEAllowed = parseFloat(parts[parts.length-1]);
+    if(ex.targetRPE) { const parts = ex.targetRPE.match(/(\d+)/g); if(parts && parts.length > 0) maxRPEAllowed = parseFloat(parts[parts.length-1]); }
+
+    // 5. Progression Logic (Triggered by Last Set)
+    let increaseGlobal = false;
+    
+    if (lastSetReps >= max) {
+        // Last set hit max reps. Did it pass RPE check?
+        if (lastSetRPE <= maxRPEAllowed) {
+            increaseGlobal = true;
+        }
     }
 
-    // Algorithm
-    if (prevR < min) return { weight: prevW - inc, reps: min, type: 'regress', msg: 'Regress' };
-    if (prevR >= max) {
-        if(prevRPE <= maxRPEAllowed) return { weight: prevW + inc, reps: min, type: 'progress', msg: 'Go Up' };
-        else return { weight: prevW, reps: max, type: 'hold', msg: 'RPE High' };
+    if (increaseGlobal) {
+        // We passed the check. Increase weight relative to what we did in THIS set index last time.
+        return { weight: baseWeight + inc, reps: min, type: 'progress', msg: 'Go Up' };
+    } else {
+        // We did not pass. Hold weight. Try to add a rep (capped at max).
+        // If we previously did max reps on this specific set, but failed the last set, we just hold.
+        let targetReps = parseInt(prevSetThisRow.reps) + 1;
+        if (targetReps > max) targetReps = max;
+        return { weight: baseWeight, reps: targetReps, type: 'hold', msg: '+1 Rep' };
     }
-    return { weight: prevW, reps: prevR + 1, type: 'hold', msg: '+1 Rep' };
 }
 
 // --- LOGGING ---
@@ -291,7 +302,14 @@ function addSetInputRow(setIndex = null, isManual = false) {
         if(t.type === 'progress') badge = `<span class="target-pill">⬆ Inc Wt</span>`;
         if(t.type === 'regress') badge = `<span class="target-pill regress">⬇ Deload</span>`;
         
-        div.innerHTML = `<div style="background:#252525; padding:10px; border-radius:8px; margin-bottom:10px;"><div class="row"><span style="font-size:12px; font-weight:bold; color:#888;">SET ${idx+1}</span></div><div class="set-row" style="margin-top:5px; margin-bottom:0;"><input type="number" class="l-w" placeholder="Kg" value="${t.weight}"><input type="number" class="l-r" placeholder="Reps" value="${t.reps}"><input type="number" class="l-rpe" placeholder="RPE">${isManual ? '<button class="del-btn" onclick="this.closest(\'div\').parentElement.remove()">X</button>' : ''}</div><div class="row-start" style="margin-top:4px;">${badge}<span style="font-size:11px; color:var(--success);">Target: ${t.weight||'?'}kg x ${t.reps||'?'}</span></div></div>`;
+        // Context string
+        let prevText = "";
+        if(ex.history.length > 0) {
+            const last = ex.history[ex.history.length-1];
+            if(last.sets && last.sets[idx]) prevText = `Last: ${last.sets[idx].weight}kg x ${last.sets[idx].reps}`;
+        }
+
+        div.innerHTML = `<div style="background:#252525; padding:10px; border-radius:8px; margin-bottom:10px;"><div class="row"><span style="font-size:12px; font-weight:bold; color:#888;">SET ${idx+1}</span><span class="prev-data">${prevText}</span></div><div class="set-row" style="margin-top:5px; margin-bottom:0;"><input type="number" class="l-w" placeholder="Kg" value="${t.weight}"><input type="number" class="l-r" placeholder="Reps" value="${t.reps}"><input type="number" class="l-rpe" placeholder="RPE">${isManual ? '<button class="del-btn" onclick="this.closest(\'div\').parentElement.remove()">X</button>' : ''}</div><div class="row-start" style="margin-top:4px;">${badge}<span style="font-size:11px; color:var(--success);">Target: ${t.weight||'?'}kg x ${t.reps||'?'}</span></div></div>`;
     } 
     else if (ex.type === 'superset') {
         const tA = getSmartTarget(ex, idx, 'A');
@@ -299,13 +317,20 @@ function addSetInputRow(setIndex = null, isManual = false) {
         const initA = (ex.name||'?').substring(0,2).toUpperCase();
         const initB = (ex.nameB||'?').substring(0,2).toUpperCase();
         
+        let prevA = "", prevB = "";
+        if(ex.history.length > 0) {
+            const last = ex.history[ex.history.length-1];
+            if(last.setsA && last.setsA[idx]) prevA = `${last.setsA[idx].weight}x${last.setsA[idx].reps}`;
+            if(last.setsB && last.setsB[idx]) prevB = `${last.setsB[idx].weight}x${last.setsB[idx].reps}`;
+        }
+
         div.className = 'super-block';
         div.innerHTML = `
             <div style="font-size:12px; color:#666; margin-bottom:5px; text-align:right">SET ${idx+1}</div>
             <div class="super-row"><div class="super-label">${initA}</div><input type="number" class="l-w-a" placeholder="Kg" value="${tA.weight}"><input type="number" class="l-r-a" placeholder="Reps" value="${tA.reps}"><input type="number" class="l-rpe-a" placeholder="RPE"></div>
-            <div style="font-size:10px; color:var(--success); text-align:right; margin-top:-4px; margin-bottom:4px;">Target A: ${tA.weight||'?'}kg x ${tA.reps}</div>
+            <div style="font-size:10px; color:#aaa; text-align:right; margin-top:-4px; margin-bottom:4px;">Last: ${prevA} | Target: ${tA.weight}kg</div>
             <div class="super-row"><div class="super-label">${initB}</div><input type="number" class="l-w-b" placeholder="Kg" value="${tB.weight}"><input type="number" class="l-r-b" placeholder="Reps" value="${tB.reps}"><input type="number" class="l-rpe-b" placeholder="RPE"></div>
-            <div style="font-size:10px; color:#ff9f0a; text-align:right; margin-top:-4px;">Target B: ${tB.weight||'?'}kg x ${tB.reps}</div>
+            <div style="font-size:10px; color:#aaa; text-align:right; margin-top:-4px;">Last: ${prevB} | Target: ${tB.weight}kg</div>
             ${isManual ? '<div class="super-del" onclick="this.parentElement.remove()">X</div>' : ''}
         `;
     } 
@@ -340,7 +365,14 @@ function openStats(idx) {
         const d = new Date(h.date).toLocaleDateString('en-US', {month:'short', day:'numeric'}); dates.push(d);
         let bestW=0, bestR=0, setStr="", bestStr="-";
         if(ex.type==='normal' && h.sets) { h.sets.forEach(s=>{ setStr+=`${s.weight}x${s.reps}<br>`; if(parseFloat(s.weight)>bestW){bestW=s.weight; bestR=s.reps;} }); bestStr=`${bestW}kg x ${bestR}`; }
-        else if(ex.type==='superset' && h.setsA) { setStr="Superset"; h.setsA.forEach(s=>{ if(parseFloat(s.weight)>bestW) bestW=s.weight; }); bestStr=`${bestW}kg (A)`; }
+        else if(ex.type==='superset' && h.setsA) { 
+            setStr = "Superset"; 
+            let bestWA=0, bestWB=0;
+            h.setsA.forEach(s=>{ if(parseFloat(s.weight)>bestWA) bestWA=s.weight; }); 
+            if(h.setsB) h.setsB.forEach(s=>{ if(parseFloat(s.weight)>bestWB) bestWB=s.weight; });
+            bestStr=`${bestWA}kg (A) / ${bestWB}kg (B)`; 
+            bestW=bestWA; // For chart, track A
+        }
         else if(ex.type==='giant') { bestW=h.weight; bestR=h.totalReps; bestStr=`${bestW}kg x ${bestR}`; }
         maxWeights.push(bestW); maxReps.push(bestR||0); tbody.innerHTML+=`<tr><td>${d}</td><td>${setStr}</td><td>${bestStr}</td></tr>`;
     });
@@ -356,9 +388,10 @@ function renderConfigFields() {
     const type = document.getElementById('cfg-type').value, div = document.getElementById('cfg-dynamic-area'); div.innerHTML = '';
     const rpeHTML = `<input id="cfg-rpe" placeholder="Target RPE (e.g. 7-9)">`;
     if(type === 'normal') div.innerHTML = `<input id="cfg-name" placeholder="Name"><div class="grid-2"><input id="cfg-sets" placeholder="Sets"><input id="cfg-inc" placeholder="Increment"></div><div class="grid-2"><input id="cfg-min" placeholder="Min"><input id="cfg-max" placeholder="Max"></div>${rpeHTML}`;
-    else if (type === 'superset') div.innerHTML = `<div class="grid-2"><input id="cfg-sets" placeholder="Sets"><input id="cfg-inc" placeholder="Inc"></div>${rpeHTML}<hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:var(--accent)">Exercise A</label><input id="cfg-name" placeholder="Name"><div class="grid-2"><input id="cfg-min" placeholder="Min"><input id="cfg-max" placeholder="Max"></div><hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:#ff9f0a">Exercise B</label><input id="cfg-name-b" placeholder="Name"><div class="grid-3"><input id="cfg-min-b" placeholder="Min"><input id="cfg-max-b" placeholder="Max"><input id="cfg-inc-b" placeholder="Inc B"></div>`;
+    else if (type === 'superset') div.innerHTML = `<div class="grid-2"><input id="cfg-sets" placeholder="Sets (3)"><input id="cfg-inc" placeholder="Common Inc (e.g. 2.5)"></div>${rpeHTML}<hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:var(--accent)">Exercise A</label><input id="cfg-name" placeholder="Name"><div class="grid-2"><input id="cfg-min" placeholder="Min"><input id="cfg-max" placeholder="Max"></div><hr style="border:1px solid #333; margin:10px 0;"><label class="meta-text" style="color:#ff9f0a">Exercise B</label><input id="cfg-name-b" placeholder="Name"><div class="grid-3"><input id="cfg-min-b" placeholder="Min"><input id="cfg-max-b" placeholder="Max"><input id="cfg-inc-b" placeholder="Inc B (opt)"></div>`;
     else if (type === 'giant') div.innerHTML = `<input id="cfg-name" placeholder="Name"><div class="grid-2"><input id="cfg-min" placeholder="Start"><input id="cfg-max" placeholder="End"></div><div class="grid-2"><input id="cfg-inc" placeholder="Wt Inc"><input id="cfg-rep-inc" placeholder="Rep Inc"></div>`;
 }
+
 function openEditModal(idx = null) {
     document.getElementById('modal-edit').classList.remove('hidden'); editIndex = idx;
     document.getElementById('cfg-dynamic-area').innerHTML = ''; document.getElementById('cfg-type').value = 'normal';
@@ -374,12 +407,12 @@ function openEditModal(idx = null) {
     }
 }
 function saveExercise() {
-    const ex = editIndex!==null ? exercises[editIndex] : {id:Date.now(), history:[]};
-    ex.day=document.getElementById('cfg-day').value; ex.name=document.getElementById('cfg-name').value; ex.type=document.getElementById('cfg-type').value;
+    const ex = editIndex !== null ? exercises[editIndex] : { id: Date.now(), history: [] };
+    ex.day = document.getElementById('cfg-day').value; ex.name = document.getElementById('cfg-name').value; ex.type = document.getElementById('cfg-type').value;
     if(ex.type==='normal'){ ex.sets=document.getElementById('cfg-sets').value; ex.inc=document.getElementById('cfg-inc').value; ex.min=document.getElementById('cfg-min').value; ex.max=document.getElementById('cfg-max').value; ex.targetRPE=document.getElementById('cfg-rpe').value; }
-    if(ex.type==='superset'){ ex.sets=document.getElementById('cfg-sets').value; ex.inc=document.getElementById('cfg-inc').value; ex.min=document.getElementById('cfg-min').value; ex.max=document.getElementById('cfg-max').value; ex.nameB=document.getElementById('cfg-name-b').value; ex.minB=document.getElementById('cfg-min-b').value; ex.maxB=document.getElementById('cfg-max-b').value; ex.incB=document.getElementById('cfg-inc-b').value; ex.targetRPE=document.getElementById('cfg-rpe').value; }
+    if(ex.type==='superset'){ ex.sets=document.getElementById('cfg-sets').value; ex.inc=document.getElementById('cfg-inc').value; ex.min=document.getElementById('cfg-min').value; ex.max=document.getElementById('cfg-max').value; ex.targetRPE=document.getElementById('cfg-rpe').value; ex.nameB=document.getElementById('cfg-name-b').value; ex.minB=document.getElementById('cfg-min-b').value; ex.maxB=document.getElementById('cfg-max-b').value; ex.incB=document.getElementById('cfg-inc-b').value; }
     if(ex.type==='giant'){ ex.min=document.getElementById('cfg-min').value; ex.max=document.getElementById('cfg-max').value; ex.inc=document.getElementById('cfg-inc').value; ex.repInc=document.getElementById('cfg-rep-inc').value; }
-    if(editIndex===null) exercises.push(ex); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); if(activeDay) renderExercises(); else renderHome();
+    if(editIndex === null) exercises.push(ex); localStorage.setItem('exercises_v6', JSON.stringify(exercises)); closeModals(); if(activeDay) renderExercises(); else renderHome();
 }
 function moveDay(d,dir) { const i=dayOrder.indexOf(d); if(i+dir>=0 && i+dir<dayOrder.length){ [dayOrder[i],dayOrder[i+dir]]=[dayOrder[i+dir],dayOrder[i]]; renderHome(); } }
 function moveExercise(i,dir) { const ex=exercises[i], sub=exercises.map((e,idx)=>e.day===ex.day?idx:-1).filter(n=>n!==-1), pos=sub.indexOf(i); if(pos+dir>=0 && pos+dir<sub.length){ const swap=sub[pos+dir]; [exercises[i],exercises[swap]]=[exercises[swap],exercises[i]]; localStorage.setItem('exercises_v6', JSON.stringify(exercises)); renderExercises(); } }
